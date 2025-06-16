@@ -1,4 +1,1 @@
-CREATE TABLE IF NOT EXISTS `USERS`(
 
-  
-)
