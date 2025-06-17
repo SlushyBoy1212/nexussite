@@ -1,16 +1,370 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Nexus Arcade</title>
-    <link rel="icon" href="https://raw.githubusercontent.com/SlushyBoy1212/nexussite/refs/heads/main/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="/style.css">
-     <!-- The website JavaScript file -->
-    <script src="/coffee.js" defer></script>
-    <!-- Oher Stuff -->
-  </head>
-  <body>
-  </head>
-  <body>
-    <img src="https://raw.githubusercontent.com/SlushyBoy1212/nexussite/refs/heads/main/favicon.ico" style="width: 100px; height: 100px;">
-  </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Nexus - Modern Gaming Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Modern/Retro Blend - 'Inter' for body, 'Press Start 2P' for main title -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for a modern, sleek gaming feel */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Modern, subtle gradient background */
+            background: linear-gradient(135deg, #1e3a8a, #0b1c41, #06102a); /* Deep blue to very dark blue */
+            color: #e2e8f0; /* Light off-white for general text */
+            min-height: 100vh; /* Ensure full viewport height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Retro main heading font (for brand identity) */
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            color: #4ade80; /* Brighter, modern green */
+            text-shadow: 0 0 8px rgba(74, 222, 128, 0.6), 0 0 15px rgba(74, 222, 128, 0.3); /* Softer glow */
+        }
+
+        /* Modern headings */
+        h2, h3, h4, h5, h6 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700; /* Bold for emphasis */
+            color: #6ee7b7; /* Tealish green for accents */
+        }
+
+        /* Modernized Arcade button style with animation */
+        .arcade-button {
+            @apply px-7 py-3 rounded-xl font-bold uppercase tracking-wide transition-all duration-300 ease-in-out;
+            background: linear-gradient(145deg, #ef4444, #f97316); /* Red to orange gradient */
+            color: #1f2937; /* Dark text for contrast */
+            border: none; /* No hard border */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(249, 115, 22, 0.3); /* Soft modern shadow with subtle glow */
+            position: relative; /* For animation */
+            overflow: hidden; /* For pseudo-element effects */
+            z-index: 1; /* To ensure pseudo-element is behind */
+        }
+
+        .arcade-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #f97316, #ef4444); /* Inverted gradient for hover */
+            z-index: -1;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+
+        .arcade-button:hover::before {
+            transform: translateX(0);
+        }
+
+        .arcade-button:hover {
+            transform: translateY(-3px); /* Subtle lift effect */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(249, 115, 22, 0.5); /* Enhanced shadow and glow on hover */
+        }
+
+        /* Modernized Card background with softer shadows and transparency */
+        .modern-card {
+            background-color: rgba(0, 0, 0, 0.5); /* More opaque, but still transparent dark background */
+            border: 1px solid rgba(255, 255, 255, 0.08); /* Softer light border */
+            @apply rounded-xl shadow-2xl p-8; /* Larger padding, more pronounced shadow */
+            backdrop-filter: blur(5px); /* Subtle blur effect */
+        }
+
+        /* Input field styling for modern look */
+        .modern-input {
+            @apply px-5 py-3 rounded-lg bg-gray-900 bg-opacity-70 text-green-300 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ease-in-out;
+        }
+
+        /* Modern icon placeholders (using inline SVG for simplicity in HTML-only) */
+        .modern-icon-placeholder {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(74, 222, 128, 0.1); /* Subtle green tint */
+            border: 2px solid #4ade80; /* Green border */
+            @apply rounded-full flex justify-center items-center text-gray-200 text-3xl;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.4); /* Soft glow */
+        }
+
+        .modern-icon-placeholder svg {
+            fill: currentColor;
+            width: 60%;
+            height: 60%;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .arcade-button {
+                @apply px-5 py-2 text-base;
+            }
+            h1 {
+                font-size: 2.5rem;
+            }
+            h2 {
+                font-size: 1.8rem;
+            }
+            .grid-cols-2 {
+                grid-template-columns: 1fr; /* Stack columns on small screens */
+            }
+            .modern-card {
+                @apply p-6;
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- Header Section -->
+    <header class="w-full max-w-7xl mx-auto py-6 flex flex-col md:flex-row justify-between items-center bg-transparent rounded-xl">
+        <h1 class="text-4xl sm:text-5xl mb-4 md:mb-0 text-center md:text-left">Arcade Nexus</h1>
+        <nav class="flex flex-wrap justify-center md:justify-end gap-4">
+            <a href="#home" class="arcade-button nav-link">Home</a>
+            <a href="#forum" class="arcade-button nav-link">Forum</a>
+            <a href="#community" class="arcade-button nav-link">Community</a>
+            <a href="#gamemaker" class="arcade-button nav-link">Game Maker</a>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-7xl mx-auto my-8 space-y-12">
+
+        <!-- Home/Hero Section -->
+        <section id="home" class="modern-card text-center">
+            <h2 class="text-3xl mb-4">Welcome to Arcade Nexus!</h2>
+            <p class="text-lg mb-6 text-gray-300">
+                Your ultimate gaming destination. Play exciting titles, connect with fellow enthusiasts, and unleash your creativity with our powerful game maker!
+            </p>
+            <div class="flex justify-center items-center gap-8 flex-wrap">
+                <!-- Modern SVG Icons -->
+                <div class="modern-icon-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </div>
+                <div class="modern-icon-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 10V6c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v4c-1.1 0-2 .9-2 2v5h16v-5c0-1.1-.9-2-2-2zM8 6h8v4H8V6zm10 11H6v-3h12v3z"/></svg>
+                </div>
+                <div class="modern-icon-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6V6h12v8z"/></svg>
+                </div>
+            </div>
+            <p class="text-md mt-6 text-gray-400">
+                Experience cutting-edge gaming with a touch of nostalgia.
+            </p>
+        </section>
+
+        <!-- Forum Section -->
+        <section id="forum" class="modern-card">
+            <h2 class="text-3xl mb-6 text-center">Community Forum</h2>
+            <div class="space-y-6">
+                <!-- Forum Topic 1 -->
+                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
+                    <h3 class="text-xl text-green-400">Next-Gen Gaming Discussions: What's on your mind?</h3>
+                    <p class="text-gray-400 text-sm mt-2">Posted by <span class="text-orange-300">GamerElite</span> on June 15, 2025</p>
+                    <p class="mt-2 text-gray-300">Dive into discussions about upcoming titles, hardware, and the future of gaming!</p>
+                    <a href="#" class="text-green-500 hover:text-green-300 text-sm mt-3 inline-block transition-colors duration-200">&raquo; Read More</a>
+                </div>
+                <!-- Forum Topic 2 -->
+                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
+                    <h3 class="text-xl text-green-400">Game Development Insights & Showcase</h3>
+                    <p class="text-gray-400 text-sm mt-2">Posted by <span class="text-orange-300">CodeWizard</span> on June 14, 2025</p>
+                    <p class="mt-2 text-gray-300">Share your game development journey, get feedback, and showcase your creations here!</p>
+                    <a href="#" class="text-green-500 hover:text-green-300 text-sm mt-3 inline-block transition-colors duration-200">&raquo; Read More</a>
+                </div>
+                <!-- Add New Topic Button -->
+                <div class="text-center mt-8">
+                    <button class="arcade-button">Start New Topic</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Community Section (DMs & Mini-Communities) -->
+        <section id="community" class="modern-card">
+            <h2 class="text-3xl mb-6 text-center">Connect & Collaborate</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- DMs Preview -->
+                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
+                    <h3 class="text-xl text-green-400 mb-4">Direct Messages</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-center gap-4">
+                            <span class="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0"></span>
+                            <div>
+                                <p class="font-bold text-orange-300">SyncPlayer</p>
+                                <p class="text-sm text-gray-300">"New co-op mission ready?"</p>
+                            </div>
+                        </li>
+                        <li class="flex items-center gap-4">
+                            <span class="w-10 h-10 rounded-full bg-red-600 flex-shrink-0"></span>
+                            <div>
+                                <p class="font-bold text-orange-300">LevelUpPro</p>
+                                <p class="text-sm text-gray-300">"Got a dev question for you!"</p>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="text-center mt-6">
+                        <button class="arcade-button text-sm">View All DMs</button>
+                    </div>
+                </div>
+
+                <!-- Mini-Communities / Groups -->
+                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
+                    <h3 class="text-xl text-green-400 mb-4">Gaming Guilds</h3>
+                    <div class="space-y-3">
+                        <div class="bg-gray-800 bg-opacity-60 rounded-lg p-4 flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-orange-300">Indie Dev Collective</p>
+                                <p class="text-sm text-gray-400">75 members</p>
+                            </div>
+                            <a href="#" class="text-green-500 hover:text-green-300 text-sm transition-colors duration-200">&raquo; Join</a>
+                        </div>
+                        <div class="bg-gray-800 bg-opacity-60 rounded-lg p-4 flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-orange-300">Retro Revival Crew</p>
+                                <p class="text-sm text-gray-400">180 members</p>
+                            </div>
+                            <a href="#" class="text-green-500 hover:text-green-300 text-sm transition-colors duration-200">&raquo; Join</a>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button class="arcade-button text-sm">Browse Guilds</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Game Maker Section -->
+        <section id="gamemaker" class="modern-card">
+            <h2 class="text-3xl mb-6 text-center">Create Your Own Worlds!</h2>
+            <p class="text-lg mb-8 text-gray-300 text-center">
+                Ignite your imagination with our intuitive game maker. Design, build, and share your unique gaming experiences with ease!
+            </p>
+            <div class="space-y-6">
+                <!-- Game Title Input -->
+                <div>
+                    <label for="game-title" class="block text-green-400 text-lg mb-2">Project Name:</label>
+                    <input type="text" id="game-title" placeholder="e.g., Cyberpunk Odyssey" class="w-full modern-input">
+                </div>
+                <!-- Game Type Selection -->
+                <div>
+                    <label for="game-type" class="block text-green-400 text-lg mb-2">Game Genre:</label>
+                    <select id="game-type" class="w-full modern-input">
+                        <option value="">Select a Genre</option>
+                        <option value="action">Action/Adventure</option>
+                        <option value="rpg">RPG</option>
+                        <option value="strategy">Strategy</option>
+                        <option value="simulation">Simulation</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <!-- Game Description -->
+                <div>
+                    <label for="game-description" class="block text-green-400 text-lg mb-2">Game Pitch:</label>
+                    <textarea id="game-description" rows="4" placeholder="Craft an exciting description for your game..." class="w-full modern-input"></textarea>
+                </div>
+                <!-- Asset Creation (Placeholder) -->
+                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50 text-center">
+                    <h3 class="text-xl text-green-400 mb-3">Integrated Asset Studio</h3>
+                    <p class="text-gray-400">
+                        Design characters, environments, and animations with our powerful visual tools.
+                    </p>
+                    <div class="flex justify-center gap-6 mt-4">
+                        <div class="modern-icon-placeholder w-16 h-16 text-2xl">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v4h-2zm0 6h2v2h-2z"/></svg>
+                        </div>
+                        <div class="modern-icon-placeholder w-16 h-16 text-2xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 6v1H9v-1h5zm-1 5h-3v-1h3v1zm0 3h-3v-1h3v1zm-3 4h3v-1h-3v1zM20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16z"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- Create Game Button -->
+                <div class="text-center mt-8">
+                    <button class="arcade-button" id="launchGameMaker">Launch Game Maker Studio</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="w-full max-w-7xl mx-auto py-6 mt-8 text-center text-gray-500 text-sm border-t border-gray-700 border-opacity-30">
+        <p>&copy; 2025 Arcade Nexus. All Rights Reserved. | Experience the Future of Gaming.</p>
+        <p class="mt-2">
+            <a href="#" class="text-green-500 hover:text-green-300 transition-colors duration-200">Privacy Policy</a> |
+            <a href="#" class="text-green-500 hover:text-green-300 transition-colors duration-200">Terms of Service</a>
+        </p>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default anchor click behavior
+
+                const targetId = this.getAttribute('href').substring(1); // Get target section ID
+                const targetElement = document.getElementById(targetId); // Get the target element
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth' // Smooth scroll
+                    });
+                }
+            });
+        });
+
+        // Example of simple JavaScript interaction (can be expanded)
+        // For demonstration, let's add an alert when 'Launch Game Maker Studio' is clicked
+        const launchGameMakerButton = document.getElementById('launchGameMaker');
+        if (launchGameMakerButton) {
+            launchGameMakerButton.addEventListener('click', function() {
+                // In a real application, this would open the game maker interface or navigate
+                const messageBox = document.createElement('div');
+                messageBox.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: #2d3748; /* Darker background */
+                    color: #fff;
+                    padding: 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                    z-index: 1000;
+                    font-family: 'Inter', sans-serif;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+                    max-width: 80%;
+                `;
+
+                const messageText = document.createElement('p');
+                messageText.textContent = "Launching Game Maker Studio! (This is a placeholder action)";
+                messageBox.appendChild(messageText);
+
+                const closeButton = document.createElement('button');
+                closeButton.textContent = "Got It!";
+                closeButton.style.cssText = `
+                    background: linear-gradient(145deg, #4ade80, #6ee7b7); /* Greenish gradient */
+                    color: #1f2937;
+                    padding: 8px 15px;
+                    border-radius: 8px;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: all 0.2s ease-in-out;
+                `;
+                closeButton.onmouseover = () => closeButton.style.transform = 'translateY(-2px)';
+                closeButton.onmouseout = () => closeButton.style.transform = 'translateY(0)';
+                closeButton.onclick = () => document.body.removeChild(messageBox);
+                messageBox.appendChild(closeButton);
+
+                document.body.appendChild(messageBox);
+            });
+        }
+    </script>
+</body>
 </html>
