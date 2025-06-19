@@ -3,259 +3,605 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Nexus - Modern Gaming Hub</title>
+    <title>Arcade Nexus - Retro Community Game</title>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for Modern/Retro Blend - 'Inter' for body, 'Press Start 2P' for main title -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="/style.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Equivalent to bg-gray-900 */
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem; /* Equivalent to p-4 */
+        }
+
+        /* Custom Scrollbar for Messaging Page */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #4a5568; /* Tailwind gray-700 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #6b46c1; /* Tailwind purple-600 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #805ad5; /* Tailwind purple-700 */
+        }
+
+        /* Retro Button Base Styles */
+        .retro-button {
+            padding: 0.75rem 1.5rem; /* px-6 py-3 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            color: #ffffff;
+            font-weight: 700; /* font-bold */
+            background: linear-gradient(to right, #8b5cf6, #6366f1); /* from-purple-600 to-indigo-600 */
+            transition: all 0.3s ease-in-out;
+            transform: scale(1);
+            outline: none;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Retro Button Hover Styles */
+        .retro-button:hover {
+            background: linear-gradient(to right, #7c3aed, #4f46e5); /* hover:from-purple-700 hover:to-indigo-700 */
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* hover:shadow-xl */
+        }
+
+        /* Retro Button Focus Styles */
+        .retro-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.5); /* focus:ring-4 focus:ring-purple-300 (approx) */
+        }
+
+        /* Retro Button Disabled Styles */
+        .retro-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1); /* No scale on disabled */
+            box-shadow: none; /* No shadow on disabled */
+        }
+
+        /* Specific styles for logout button (kept for consistency in button removal, but unused) */
+        .retro-button.logout {
+            background: linear-gradient(to right, #dc2626, #ec4899); /* from-red-600 to-pink-600 */
+        }
+        .retro-button.logout:hover {
+            background: linear-gradient(to right, #b91c1c, #db2777); /* hover:from-red-700 hover:to-pink-700 */
+        }
+
+        /* Input fields common styles */
+        .retro-input {
+            background-color: #4a5568; /* bg-gray-700 */
+            border: 1px solid #718096; /* border-gray-600 */
+            color: #ffffff;
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            border-radius: 0.25rem; /* rounded */
+            width: 100%;
+        }
+        .retro-textarea {
+            background-color: #4a5568; /* bg-gray-700 */
+            border: 1px solid #718096; /* border-gray-600 */
+            color: #ffffff;
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            border-radius: 0.25rem; /* rounded */
+            width: 100%;
+            min-height: 6rem; /* h-24 equivalent for textarea */
+        }
+    </style>
 </head>
-<body class="p-4">
-    <!-- Header Section -->
-    <header class="w-full max-w-7xl mx-auto py-6 flex flex-col md:flex-row justify-between items-center bg-transparent rounded-xl">
-        <h1 class="text-4xl sm:text-5xl mb-4 md:mb-0 text-center md:text-left">Arcade Nexus</h1>
-        <nav class="flex flex-wrap justify-center md:justify-end gap-4">
-            <a href="#home" class="arcade-button nav-link">Home</a>
-            <a href="#forum" class="arcade-button nav-link">Forum</a>
-            <a href="#community" class="arcade-button nav-link">Community</a>
-            <a href="#gamemaker" class="arcade-button nav-link">Game Maker</a>
+<body>
+    <header class="w-full max-w-5xl bg-gray-800 p-5 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between mb-8">
+        <h1 class="text-3xl font-extrabold text-purple-400 mb-4 md:mb-0">Arcade Nexus</h1>
+        <nav class="flex flex-wrap justify-center gap-4">
+            <button class="retro-button" onclick="navigateTo('home')">Home</button>
+            <button class="retro-button" onclick="navigateTo('games')">Games</button>
+            <button class="retro-button" onclick="navigateTo('forum')">Forum</button>
+            <button class="retro-button" onclick="navigateTo('messaging')">Chat</button>
+            <!-- Login/Logout buttons removed as Firebase authentication is removed -->
         </nav>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="w-full max-w-7xl mx-auto my-8 space-y-12">
+    <main id="app-main-content" class="w-full max-w-5xl flex-grow">
+        <!-- User ID Display -->
+        <div class="text-right text-sm text-gray-400 mb-4">
+            Current User ID: <span id="user-id-display" class="font-mono text-purple-300 break-all">Guest User</span>
+        </div>
 
-        <!-- Home/Hero Section -->
-        <section id="home" class="modern-card text-center">
-            <h2 class="text-3xl mb-4">Welcome to Arcade Nexus!</h2>
-            <p class="text-lg mb-6 text-gray-300">
-                Your ultimate gaming destination. Play exciting titles, connect with fellow enthusiasts, and unleash your creativity with our powerful game maker!
-            </p>
-            <div class="flex justify-center items-center gap-8 flex-wrap">
-                <!-- Modern SVG Icons -->
-                <div class="modern-icon-placeholder">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                </div>
-                <div class="modern-icon-placeholder">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 10V6c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v4c-1.1 0-2 .9-2 2v5h16v-5c0-1.1-.9-2-2-2zM8 6h8v4H8V6zm10 11H6v-3h12v3z"/></svg>
-                </div>
-                <div class="modern-icon-placeholder">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6V6h12v8z"/></svg>
-                </div>
-            </div>
-            <p class="text-md mt-6 text-gray-400">
-                Experience cutting-edge gaming with a touch of nostalgia.
-            </p>
-        </section>
-
-        <!-- Forum Section -->
-        <section id="forum" class="modern-card">
-            <h2 class="text-3xl mb-6 text-center">Community Forum</h2>
-            <div class="space-y-6">
-                <!-- Forum Topic 1 -->
-                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
-                    <h3 class="text-xl text-green-400">Next-Gen Gaming Discussions: What's on your mind?</h3>
-                    <p class="text-gray-400 text-sm mt-2">Posted by <span class="text-orange-300">GamerElite</span> on June 15, 2025</p>
-                    <p class="mt-2 text-gray-300">Dive into discussions about upcoming titles, hardware, and the future of gaming!</p>
-                    <a href="#" class="text-green-500 hover:text-green-300 text-sm mt-3 inline-block transition-colors duration-200">&raquo; Read More</a>
-                </div>
-                <!-- Forum Topic 2 -->
-                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
-                    <h3 class="text-xl text-green-400">Game Development Insights & Showcase</h3>
-                    <p class="text-gray-400 text-sm mt-2">Posted by <span class="text-orange-300">CodeWizard</span> on June 14, 2025</p>
-                    <p class="mt-2 text-gray-300">Share your game development journey, get feedback, and showcase your creations here!</p>
-                    <a href="#" class="text-green-500 hover:text-green-300 text-sm mt-3 inline-block transition-colors duration-200">&raquo; Read More</a>
-                </div>
-                <!-- Add New Topic Button -->
-                <div class="text-center mt-8">
-                    <button class="arcade-button">Start New Topic</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Community Section (DMs & Mini-Communities) -->
-        <section id="community" class="modern-card">
-            <h2 class="text-3xl mb-6 text-center">Connect & Collaborate</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- DMs Preview -->
-                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
-                    <h3 class="text-xl text-green-400 mb-4">Direct Messages</h3>
-                    <ul class="space-y-4">
-                        <li class="flex items-center gap-4">
-                            <span class="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0"></span>
-                            <div>
-                                <p class="font-bold text-orange-300">SyncPlayer</p>
-                                <p class="text-sm text-gray-300">"New co-op mission ready?"</p>
-                            </div>
-                        </li>
-                        <li class="flex items-center gap-4">
-                            <span class="w-10 h-10 rounded-full bg-red-600 flex-shrink-0"></span>
-                            <div>
-                                <p class="font-bold text-orange-300">LevelUpPro</p>
-                                <p class="text-sm text-gray-300">"Got a dev question for you!"</p>
-                            </div>
-                        </li>
-                    </ul>
-                    <div class="text-center mt-6">
-                        <button class="arcade-button text-sm">View All DMs</button>
-                    </div>
-                </div>
-
-                <!-- Mini-Communities / Groups -->
-                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50">
-                    <h3 class="text-xl text-green-400 mb-4">Gaming Guilds</h3>
-                    <div class="space-y-3">
-                        <div class="bg-gray-800 bg-opacity-60 rounded-lg p-4 flex justify-between items-center">
-                            <div>
-                                <p class="font-bold text-orange-300">Indie Dev Collective</p>
-                                <p class="text-sm text-gray-400">75 members</p>
-                            </div>
-                            <a href="#" class="text-green-500 hover:text-green-300 text-sm transition-colors duration-200">&raquo; Join</a>
-                        </div>
-                        <div class="bg-gray-800 bg-opacity-60 rounded-lg p-4 flex justify-between items-center">
-                            <div>
-                                <p class="font-bold text-orange-300">Retro Revival Crew</p>
-                                <p class="text-sm text-gray-400">180 members</p>
-                            </div>
-                            <a href="#" class="text-green-500 hover:text-green-300 text-sm transition-colors duration-200">&raquo; Join</a>
-                        </div>
-                    </div>
-                    <div class="text-center mt-6">
-                        <button class="arcade-button text-sm">Browse Guilds</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Game Maker Section -->
-        <section id="gamemaker" class="modern-card">
-            <h2 class="text-3xl mb-6 text-center">Create Your Own Worlds!</h2>
-            <p class="text-lg mb-8 text-gray-300 text-center">
-                Ignite your imagination with our intuitive game maker. Design, build, and share your unique gaming experiences with ease!
-            </p>
-            <div class="space-y-6">
-                <!-- Game Title Input -->
-                <div>
-                    <label for="game-title" class="block text-green-400 text-lg mb-2">Project Name:</label>
-                    <input type="text" id="game-title" placeholder="e.g., Cyberpunk Odyssey" class="w-full modern-input">
-                </div>
-                <!-- Game Type Selection -->
-                <div>
-                    <label for="game-type" class="block text-green-400 text-lg mb-2">Game Genre:</label>
-                    <select id="game-type" class="w-full modern-input">
-                        <option value="">Select a Genre</option>
-                        <option value="action">Action/Adventure</option>
-                        <option value="rpg">RPG</option>
-                        <option value="strategy">Strategy</option>
-                        <option value="simulation">Simulation</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <!-- Game Description -->
-                <div>
-                    <label for="game-description" class="block text-green-400 text-lg mb-2">Game Pitch:</label>
-                    <textarea id="game-description" rows="4" placeholder="Craft an exciting description for your game..." class="w-full modern-input"></textarea>
-                </div>
-                <!-- Asset Creation (Placeholder) -->
-                <div class="bg-gray-900 bg-opacity-70 rounded-lg p-5 border border-green-700/50 text-center">
-                    <h3 class="text-xl text-green-400 mb-3">Integrated Asset Studio</h3>
-                    <p class="text-gray-400">
-                        Design characters, environments, and animations with our powerful visual tools.
-                    </p>
-                    <div class="flex justify-center gap-6 mt-4">
-                        <div class="modern-icon-placeholder w-16 h-16 text-2xl">
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v4h-2zm0 6h2v2h-2z"/></svg>
-                        </div>
-                        <div class="modern-icon-placeholder w-16 h-16 text-2xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 6v1H9v-1h5zm-1 5h-3v-1h3v1zm0 3h-3v-1h3v1zm-3 4h3v-1h-3v1zM20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16z"/></svg>
-                        </div>
-                    </div>
-                </div>
-                <!-- Create Game Button -->
-                <div class="text-center mt-8">
-                    <button class="arcade-button" id="launchGameMaker">Launch Game Maker Studio</button>
-                </div>
-            </div>
-        </section>
-
+        <!-- Pages will be rendered here dynamically by JavaScript -->
+        <div id="home-page" class="hidden"></div>
+        <!-- Auth page removed as Firebase authentication is removed -->
+        <div id="games-page" class="hidden"></div>
+        <div id="forum-page" class="hidden"></div>
+        <div id="messaging-page" class="hidden"></div>
     </main>
 
-    <!-- Footer Section -->
-    <footer class="w-full max-w-7xl mx-auto py-6 mt-8 text-center text-gray-500 text-sm border-t border-gray-700 border-opacity-30">
-        <p>&copy; 2025 Arcade Nexus. All Rights Reserved. | Experience the Future of Gaming.</p>
-        <p class="mt-2">
-            <a href="#" class="text-green-500 hover:text-green-300 transition-colors duration-200">Privacy Policy</a> |
-            <a href="#" class="text-green-500 hover:text-green-300 transition-colors duration-200">Terms of Service</a>
-        </p>
+    <footer class="w-full max-w-5xl bg-gray-800 p-5 rounded-xl shadow-lg mt-8 text-center text-gray-400">
+        &copy; <span id="current-year"></span> Arcade Nexus. All rights reserved.
     </footer>
 
+    <!-- Main Application Script -->
     <script>
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('.nav-link').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault(); // Prevent default anchor click behavior
+        // Data storage (in-memory arrays as Firebase is removed)
+        let gamesData = [];
+        let forumPostsData = [];
+        let messagesData = [];
 
-                const targetId = this.getAttribute('href').substring(1); // Get target section ID
-                const targetElement = document.getElementById(targetId); // Get the target element
+        // Global user ID (simple placeholder since no actual authentication)
+        const currentUserId = 'GuestUser-' + Math.random().toString(36).substring(2, 8);
 
-                if (targetElement) {
-                    targetElement.scrollIntoView({
-                        behavior: 'smooth' // Smooth scroll
-                    });
-                }
-            });
-        });
+        // Current view state
+        let currentView = 'home';
 
-        // Example of simple JavaScript interaction (can be expanded)
-        // For demonstration, let's add an alert when 'Launch Game Maker Studio' is clicked
-        const launchGameMakerButton = document.getElementById('launchGameMaker');
-        if (launchGameMakerButton) {
-            launchGameMakerButton.addEventListener('click', function() {
-                // In a real application, this would open the game maker interface or navigate
-                const messageBox = document.createElement('div');
-                messageBox.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: #2d3748; /* Darker background */
-                    color: #fff;
-                    padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-                    z-index: 1000;
-                    font-family: 'Inter', sans-serif;
-                    text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                    max-width: 80%;
-                `;
+        // --- Helper Functions for UI Updates and Messages ---
 
-                const messageText = document.createElement('p');
-                messageText.textContent = "Launching Game Maker Studio! (This is a placeholder action)";
-                messageBox.appendChild(messageText);
-
-                const closeButton = document.createElement('button');
-                closeButton.textContent = "Got It!";
-                closeButton.style.cssText = `
-                    background: linear-gradient(145deg, #4ade80, #6ee7b7); /* Greenish gradient */
-                    color: #1f2937;
-                    padding: 8px 15px;
-                    border-radius: 8px;
-                    border: none;
-                    cursor: pointer;
-                    font-weight: bold;
-                    transition: all 0.2s ease-in-out;
-                `;
-                closeButton.onmouseover = () => closeButton.style.transform = 'translateY(-2px)';
-                closeButton.onmouseout = () => closeButton.style.transform = 'translateY(0)';
-                closeButton.onclick = () => document.body.removeChild(messageBox);
-                messageBox.appendChild(closeButton);
-
-                document.body.appendChild(messageBox);
-            });
+        /**
+         * Displays a message to the user in a designated message area.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', 'info', 'warning'. Determines color.
+         * @param {string} pageId - The ID of the page div where the message element resides (e.g., 'auth-page', 'games-page').
+         * @param {string} messageElementId - The ID of the specific HTML element to display the message (e.g., 'auth-message', 'games-message').
+         */
+        function displayMessage(message, type, pageId, messageElementId) {
+            const messageElement = document.getElementById(messageElementId);
+            if (messageElement) {
+                messageElement.textContent = message;
+                messageElement.className = `mt-4 text-sm ${
+                    type === 'success' ? 'text-green-400' :
+                    type === 'error' ? 'text-red-400' :
+                    type === 'warning' ? 'text-yellow-400' :
+                    'text-blue-400'
+                }`;
+            } else {
+                console.warn(`Message element with ID "${messageElementId}" not found on page "${pageId}". Message: "${message}"`);
+            }
         }
+
+        /**
+         * Clears a message from a designated message area.
+         * @param {string} messageElementId - The ID of the specific HTML element to clear.
+         */
+        function clearMessage(messageElementId) {
+            const messageElement = document.getElementById(messageElementId);
+            if (messageElement) {
+                messageElement.textContent = '';
+                messageElement.className = '';
+            }
+        }
+
+        /**
+         * Sets the loading state for a button.
+         * @param {string} buttonId - The ID of the button element.
+         * @param {boolean} isLoading - True to set loading state, false otherwise.
+         * @param {string} originalText - The original text of the button.
+         * @param {string} loadingText - The text to display when loading.
+         */
+        function setLoading(buttonId, isLoading, originalText, loadingText) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = isLoading;
+                button.textContent = isLoading ? loadingText : originalText;
+            }
+        }
+
+        /**
+         * Updates the displayed user ID in the header.
+         */
+        function updateUserIdDisplay() {
+            document.getElementById('user-id-display').textContent = currentUserId;
+        }
+
+        // --- Navigation Functions ---
+
+        /**
+         * Navigates to a different page/view.
+         * @param {string} viewName - The name of the view to navigate to ('home', 'games', 'forum', 'messaging').
+         */
+        function navigateTo(viewName) {
+            // Hide all pages
+            ['home-page', 'games-page', 'forum-page', 'messaging-page'].forEach(id => {
+                const page = document.getElementById(id);
+                if (page) page.classList.add('hidden');
+            });
+
+            // Show the requested page and render its content
+            currentView = viewName;
+            const targetPage = document.getElementById(`${viewName}-page`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                switch (viewName) {
+                    case 'home':
+                        renderHomePage();
+                        break;
+                    case 'games':
+                        renderGamesPage();
+                        break;
+                    case 'forum':
+                        renderForumPage();
+                        break;
+                    case 'messaging':
+                        renderMessagingPage();
+                        break;
+                }
+            }
+        }
+
+        // --- Page Rendering Functions ---
+
+        /**
+         * Renders the content of the Home Page.
+         */
+        function renderHomePage() {
+            const homePageDiv = document.getElementById('home-page');
+            homePageDiv.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-[calc(100vh-280px)] p-8 text-center bg-gray-900 rounded-lg shadow-xl">
+                    <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">
+                        Welcome to <span class="text-purple-400">Arcade Nexus</span>!
+                    </h1>
+                    <p class="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl">
+                        Your ultimate community for indie retro games. Discover, create, share, and connect with fellow enthusiasts!
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-6">
+                        <button class="retro-button" onclick="navigateTo('games')">Explore Games</button>
+                        <button class="retro-button" onclick="navigateTo('forum')">Join the Forum</button>
+                        <button class="retro-button" onclick="navigateTo('messaging')">Start Chatting</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Games Page Functions ---
+
+        /**
+         * Renders the content of the Games Page.
+         */
+        function renderGamesPage() {
+            const gamesPageDiv = document.getElementById('games-page');
+            gamesPageDiv.innerHTML = `
+                <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)]">
+                    <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Your Games</h2>
+
+                    <div class="bg-gray-700 p-6 rounded-lg mb-8 shadow-inner">
+                        <h3 class="text-2xl font-bold text-white mb-4">Add a New Game</h3>
+                        <form id="add-game-form" class="space-y-4">
+                            <div>
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="game-title">
+                                    Game Title:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="game-title"
+                                    class="retro-input"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="game-desc">
+                                    Description:
+                                </label>
+                                <textarea
+                                    id="game-desc"
+                                    class="retro-textarea"
+                                    required
+                                ></textarea>
+                            </div>
+                            <button type="submit" id="add-game-button" class="retro-button w-full">
+                                Add Game
+                            </button>
+                            <p id="games-message" class="mt-4 text-sm"></p>
+                        </form>
+                    </div>
+
+                    <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
+                        <h3 class="text-2xl font-bold text-white mb-4">Community Games</h3>
+                        <div id="games-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Games will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Attach event listener
+            document.getElementById('add-game-form').addEventListener('submit', handleAddGame);
+            // Update games list with current in-memory data
+            updateGamesList(gamesData);
+        }
+
+        /**
+         * Updates the display of the games list.
+         * @param {Array<Object>} games - Array of game objects.
+         */
+        function updateGamesList(games) {
+            const gamesListContainer = document.getElementById('games-list-container');
+            if (!gamesListContainer) return;
+
+            if (games.length === 0) {
+                gamesListContainer.innerHTML = '<p class="text-gray-300 text-center col-span-full">No games added yet. Be the first!</p>';
+                return;
+            }
+
+            gamesListContainer.innerHTML = games.map(game => `
+                <div class="bg-gray-800 p-5 rounded-lg shadow-md border border-gray-600 transition-transform transform hover:scale-105">
+                    <h4 class="text-xl font-semibold text-purple-400 mb-2">${escapeHTML(game.title)}</h4>
+                    <p class="text-gray-300 text-sm mb-3">${escapeHTML(game.description)}</p>
+                    <p class="text-gray-400 text-xs">By: ${escapeHTML(game.userId)}</p>
+                    <p class="text-gray-500 text-xs mt-1">Added: ${new Date(game.timestamp).toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * Handles adding a new game to in-memory data.
+         * @param {Event} e - The submit event.
+         */
+        async function handleAddGame(e) {
+            e.preventDefault();
+            clearMessage('games-message');
+            setLoading('add-game-button', true, 'Add Game', 'Adding...');
+
+            const title = document.getElementById('game-title').value;
+            const description = document.getElementById('game-desc').value;
+
+            if (!title.trim() || !description.trim()) {
+                displayMessage("Title and description cannot be empty.", 'error', 'games-page', 'games-message');
+                setLoading('add-game-button', false, 'Add Game', '');
+                return;
+            }
+
+            // Simulate adding to a backend (add to local array)
+            const newGame = {
+                id: Date.now().toString(), // Simple unique ID
+                title: title,
+                description: description,
+                userId: currentUserId,
+                timestamp: new Date().toISOString() // Use ISO string for consistent date
+            };
+            gamesData.unshift(newGame); // Add to the beginning to show latest first
+            updateGamesList(gamesData);
+
+            document.getElementById('game-title').value = '';
+            document.getElementById('game-desc').value = '';
+            displayMessage('Game added successfully!', 'success', 'games-page', 'games-message');
+
+            setLoading('add-game-button', false, 'Add Game', '');
+        }
+
+        // --- Forum Page Functions ---
+
+        /**
+         * Renders the content of the Forum Page.
+         */
+        function renderForumPage() {
+            const forumPageDiv = document.getElementById('forum-page');
+            forumPageDiv.innerHTML = `
+                <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)]">
+                    <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Community Forum</h2>
+
+                    <div class="bg-gray-700 p-6 rounded-lg mb-8 shadow-inner">
+                        <h3 class="text-2xl font-bold text-white mb-4">Create a New Post</h3>
+                        <form id="add-post-form" class="space-y-4">
+                            <div>
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="post-title">
+                                    Post Title:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="post-title"
+                                    class="retro-input"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-gray-300 text-sm font-bold mb-2" for="post-content">
+                                    Content:
+                                </label>
+                                <textarea
+                                    id="post-content"
+                                    class="retro-textarea h-32"
+                                    required
+                                ></textarea>
+                            </div>
+                            <button type="submit" id="add-post-button" class="retro-button w-full">
+                                Create Post
+                            </button>
+                            <p id="forum-message" class="mt-4 text-sm"></p>
+                        </form>
+                    </div>
+
+                    <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
+                        <h3 class="text-2xl font-bold text-white mb-4">Recent Posts</h3>
+                        <div id="posts-list-container" class="space-y-6">
+                            <!-- Posts will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('add-post-form').addEventListener('submit', handleAddPost);
+            updateForumPostsList(forumPostsData);
+        }
+
+        /**
+         * Updates the display of the forum posts list.
+         * @param {Array<Object>} posts - Array of post objects.
+         */
+        function updateForumPostsList(posts) {
+            const postsListContainer = document.getElementById('posts-list-container');
+            if (!postsListContainer) return;
+
+            if (posts.length === 0) {
+                postsListContainer.innerHTML = '<p class="text-gray-300 text-center">No posts yet. Start a discussion!</p>';
+                return;
+            }
+
+            postsListContainer.innerHTML = posts.map(post => `
+                <div class="bg-gray-800 p-5 rounded-lg shadow-md border border-gray-600 transition-transform transform hover:scale-105">
+                    <h4 class="text-xl font-semibold text-purple-400 mb-2">${escapeHTML(post.title)}</h4>
+                    <p class="text-gray-300 text-sm mb-3">${escapeHTML(post.content)}</p>
+                    <p class="text-gray-400 text-xs">By: ${escapeHTML(post.userId)}</p>
+                    <p class="text-gray-500 text-xs mt-1">Posted: ${new Date(post.timestamp).toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * Handles adding a new forum post to in-memory data.
+         * @param {Event} e - The submit event.
+         */
+        async function handleAddPost(e) {
+            e.preventDefault();
+            clearMessage('forum-message');
+            setLoading('add-post-button', true, 'Create Post', 'Creating Post...');
+
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+
+            if (!title.trim() || !content.trim()) {
+                displayMessage("Title and content cannot be empty.", 'error', 'forum-page', 'forum-message');
+                setLoading('add-post-button', false, 'Create Post', '');
+                return;
+            }
+
+            const newPost = {
+                id: Date.now().toString(),
+                title: title,
+                content: content,
+                userId: currentUserId,
+                timestamp: new Date().toISOString()
+            };
+            forumPostsData.unshift(newPost); // Add to the beginning
+            updateForumPostsList(forumPostsData);
+
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-content').value = '';
+            displayMessage('Post created successfully!', 'success', 'forum-page', 'forum-message');
+
+            setLoading('add-post-button', false, 'Create Post', '');
+        }
+
+        // --- Messaging Page Functions ---
+
+        /**
+         * Renders the content of the Messaging Page.
+         */
+        function renderMessagingPage() {
+            const messagingPageDiv = document.getElementById('messaging-page');
+            messagingPageDiv.innerHTML = `
+                <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)] flex flex-col">
+                    <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Community Chat</h2>
+
+                    <div id="messages-list-container" class="flex-grow bg-gray-700 p-6 rounded-lg shadow-inner overflow-y-auto mb-6 h-96 custom-scrollbar">
+                        <!-- Messages will be loaded here -->
+                    </div>
+
+                    <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
+                        <form id="send-message-form" class="flex items-center space-x-4">
+                            <input
+                                type="text"
+                                id="new-message-input"
+                                placeholder="Type your message..."
+                                class="flex-grow retro-input"
+                                required
+                            />
+                            <button type="submit" id="send-message-button" class="retro-button">
+                                Send
+                            </button>
+                        </form>
+                        <p id="messaging-message" class="mt-4 text-sm"></p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('send-message-form').addEventListener('submit', handleSendMessage);
+            updateMessagesList(messagesData);
+        }
+
+        /**
+         * Updates the display of the messages list.
+         * @param {Array<Object>} messages - Array of message objects.
+         */
+        function updateMessagesList(messages) {
+            const messagesListContainer = document.getElementById('messages-list-container');
+            if (!messagesListContainer) return;
+
+            if (messages.length === 0) {
+                messagesListContainer.innerHTML = '<p class="text-gray-300 text-center">No messages yet. Start the conversation!</p>';
+                return;
+            }
+
+            messagesListContainer.innerHTML = messages.map(msg => `
+                <div class="p-3 rounded-lg shadow-sm ${msg.userId === currentUserId ? 'bg-purple-600 ml-auto text-right' : 'bg-gray-600 mr-auto text-left'} max-w-[80%]">
+                    <p class="text-sm font-semibold text-white break-words">${escapeHTML(msg.content)}</p>
+                    <p class="text-xs text-gray-200 mt-1">
+                        <span class="font-bold">${msg.userId === currentUserId ? 'You' : escapeHTML(msg.userId)}</span>
+                        - ${new Date(msg.timestamp).toLocaleTimeString()}
+                    </p>
+                </div>
+            `).join('');
+
+            // Scroll to bottom of chat
+            messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
+        }
+
+        /**
+         * Handles sending a new message to in-memory data.
+         * @param {Event} e - The submit event.
+         */
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            clearMessage('messaging-message');
+            setLoading('send-message-button', true, 'Send', 'Sending...');
+
+            const newMessageInput = document.getElementById('new-message-input');
+            const messageContent = newMessageInput.value;
+
+            if (!messageContent.trim()) {
+                displayMessage("Message cannot be empty.", 'error', 'messaging-page', 'messaging-message');
+                setLoading('send-message-button', false, 'Send', '');
+                return;
+            }
+
+            const newMessage = {
+                id: Date.now().toString(),
+                content: messageContent,
+                userId: currentUserId,
+                timestamp: new Date().toISOString()
+            };
+            messagesData.push(newMessage); // Add to the end for chat flow
+            updateMessagesList(messagesData);
+
+            newMessageInput.value = ''; // Clear input field
+            setLoading('send-message-button', false, 'Send', '');
+        }
+
+        /**
+         * Basic HTML escaping to prevent XSS.
+         * @param {string} str - The string to escape.
+         * @returns {string} The escaped string.
+         */
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // --- Initialization on DOMContentLoaded ---
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            updateUserIdDisplay(); // Set the initial Guest User ID
+
+            // Initial page load
+            navigateTo('home');
+        });
     </script>
 </body>
 </html>
