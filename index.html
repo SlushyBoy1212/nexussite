@@ -415,22 +415,33 @@
             const targetPage = document.getElementById(`${viewName}-page`);
             if (targetPage) {
                 targetPage.classList.remove('hidden');
-                switch (viewName) {
-                    case 'home':
-                        renderHomePage();
-                        break;
-                    case 'auth':
-                        renderAuthPage();
-                        break;
-                    case 'games':
-                        renderGamesPage();
-                        break;
-                    case 'forum':
-                        renderForumPage();
-                        break;
-                    case 'messaging':
-                        renderMessagingPage();
-                        break;
+                // Only render pages that rely on Firebase *after* Firebase is ready.
+                // For 'home' and 'auth' pages, they can render immediately as they handle
+                // their Firebase dependency gracefully or don't have direct data dependencies.
+                if (window.firebaseInitialized || viewName === 'home' || viewName === 'auth') {
+                     switch (viewName) {
+                        case 'home':
+                            renderHomePage();
+                            break;
+                        case 'auth':
+                            renderAuthPage();
+                            break;
+                        case 'games':
+                            renderGamesPage();
+                            break;
+                        case 'forum':
+                            renderForumPage();
+                            break;
+                        case 'messaging':
+                            renderMessagingPage();
+                            break;
+                    }
+                } else {
+                    // If Firebase is not initialized and we try to navigate to a data-dependent page,
+                    // display a loading or error state until Firebase is ready.
+                    targetPage.innerHTML = `<div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)] text-center flex items-center justify-center">
+                                                <p class="text-gray-300 text-xl">Initializing Firebase... Please wait.</p>
+                                            </div>`;
                 }
             }
         }
@@ -650,7 +661,7 @@
                     displayMessage(`Failed to load games: ${error.message}. Check Firebase Console for security rules and network.`, 'error', 'games-message');
                 });
             } else {
-                displayMessage("Firebase not initialized. Cannot load games.", 'error', 'games-message');
+                displayMessage("Firebase not initialized. Cannot load games. Please refresh.", 'error', 'games-message');
             }
         }
 
@@ -794,7 +805,7 @@
                     displayMessage(`Failed to load forum posts: ${error.message}. Check Firebase Console for security rules and network.`, 'error', 'forum-message');
                 });
             } else {
-                displayMessage("Firebase not initialized. Cannot load forum posts.", 'error', 'forum-message');
+                displayMessage("Firebase not initialized. Cannot load forum posts. Please refresh.", 'error', 'forum-message');
             }
         }
 
@@ -1081,6 +1092,8 @@
                             }
                         }
                         updateGlobalUserIdDisplay(); // Always update global display in header
+                        // After auth state is confirmed, navigate to the default page if it was pending
+                        navigateTo(currentView); // This ensures page content is rendered with correct auth state
                     });
 
                     // Initial sign-in with custom token or anonymously if token is not defined
@@ -1109,7 +1122,7 @@
             }, 100); // Check every 100ms
 
             document.getElementById('current-year').textContent = new Date().getFullYear();
-            navigateTo('home'); // Start on the home page
+            // navigateTo('home'); // Initial navigation moved inside onAuthStateChanged
         };
     </script>
 </body>
