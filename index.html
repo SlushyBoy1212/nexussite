@@ -8,6 +8,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut,
+            signInWithCustomToken,
+            signInAnonymously
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            query,
+            orderBy, // Note: orderBy requires indexes for real apps
+            onSnapshot,
+            addDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase global variables are provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // Initialize Firebase
+        window.firebaseApp = initializeApp(firebaseConfig);
+        window.firebaseAuth = getAuth(window.firebaseApp);
+        window.firebaseDb = getFirestore(window.firebaseApp);
+
+        // Export necessary functions to global scope for use in inline script tags
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
+        window.signInWithCustomToken = signInWithCustomToken;
+        window.signInAnonymously = signInAnonymously;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.collection = collection;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.onSnapshot = onSnapshot;
+        window.addDoc = addDoc;
+        window.firebaseInitialized = true; // Flag to indicate Firebase is ready
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -182,7 +232,7 @@
     <main id="app-main-content" class="w-full max-w-5xl flex-grow">
         <!-- User ID Display -->
         <div class="text-right text-sm text-gray-400 mb-4">
-            Current User: <span id="user-id-display" class="font-mono text-purple-300 break-all">Guest</span>
+            Current User: <span id="user-id-display" class="font-mono text-purple-300 break-all">Loading...</span>
         </div>
 
         <!-- Pages will be rendered here dynamically by JavaScript -->
@@ -199,16 +249,13 @@
 
     <!-- Main Application Script -->
     <script>
-        // Data storage (in-memory arrays, persisted to localStorage for basic persistence)
-        let gamesData = [];
-        let forumPostsData = [];
-        let messagesData = []; // Still in-memory, can be expanded to localStorage later
+        // Global variables for Firebase instances
+        let firebaseAuth;
+        let firebaseDb;
+        let appId; // Defined in the module script
 
-        // Simulated user database (username -> { password, displayName })
-        let usersDatabase = {};
-
-        // Global user ID and name
-        let currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
+        // Global user ID and name variables, updated by Firebase Auth
+        let currentUserId = 'Loading...';
         let currentUserName = 'Guest';
 
         // Current view state
@@ -218,62 +265,6 @@
         const userIdDisplay = document.getElementById('user-id-display');
         const authButton = document.getElementById('auth-button');
         const headerLogoutButton = document.getElementById('header-logout-button');
-
-        // --- LocalStorage Management ---
-
-        /**
-         * Loads all data (users, games, forum posts) from localStorage.
-         */
-        function loadAllData() {
-            try {
-                const storedUsers = localStorage.getItem('arcadeNexusUsers');
-                if (storedUsers) {
-                    usersDatabase = JSON.parse(storedUsers);
-                }
-
-                const storedGames = localStorage.getItem('arcadeNexusGames');
-                if (storedGames) {
-                    gamesData = JSON.parse(storedGames);
-                }
-
-                const storedPosts = localStorage.getItem('arcadeNexusForumPosts');
-                if (storedPosts) {
-                    forumPostsData = JSON.parse(storedPosts);
-                }
-
-                const storedLoggedInUser = localStorage.getItem('arcadeNexusLoggedInUser');
-                if (storedLoggedInUser && usersDatabase[storedLoggedInUser]) {
-                    currentUserName = storedLoggedInUser;
-                    currentUserId = usersDatabase[currentUserName].userId; // Retrieve stored userId
-                } else {
-                    currentUserName = 'Guest';
-                    currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
-                }
-            } catch (e) {
-                console.error("Error loading data from localStorage:", e);
-                // Clear corrupted data if unable to parse
-                localStorage.removeItem('arcadeNexusUsers');
-                localStorage.removeItem('arcadeNexusGames');
-                localStorage.removeItem('arcadeNexusForumPosts');
-                localStorage.removeItem('arcadeNexusLoggedInUser');
-                currentUserName = 'Guest';
-                currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
-            }
-        }
-
-        /**
-         * Saves all data (users, games, forum posts) to localStorage.
-         */
-        function saveAllData() {
-            try {
-                localStorage.setItem('arcadeNexusUsers', JSON.stringify(usersDatabase));
-                localStorage.setItem('arcadeNexusGames', JSON.stringify(gamesData));
-                localStorage.setItem('arcadeNexusForumPosts', JSON.stringify(forumPostsData));
-                localStorage.setItem('arcadeNexusLoggedInUser', currentUserName === 'Guest' ? '' : currentUserName);
-            } catch (e) {
-                console.error("Error saving data to localStorage:", e);
-            }
-        }
 
         // --- Helper Functions for UI Updates and Messages ---
 
@@ -331,10 +322,9 @@
          * Displays a message to the user in a designated message area for content pages.
          * @param {string} message - The message to display.
          * @param {string} type - 'success', 'error', 'info', 'warning'. Determines color.
-         * @param {string} pageId - The ID of the page div where the message element resides (e.g., 'games-page', 'forum-page').
-         * @param {string} messageElementId - The ID of the specific HTML element to display the message (e.g., 'games-message', 'forum-message').
+         * @param {string} messageElementId - The ID of the specific HTML element to display the message.
          */
-        function displayMessage(message, type, pageId, messageElementId) {
+        function displayMessage(message, type, messageElementId) {
             const messageElement = document.getElementById(messageElementId);
             if (messageElement) {
                 messageElement.textContent = message;
@@ -350,7 +340,7 @@
                     messageElement.className = '';
                 }, 5000);
             } else {
-                console.warn(`Message element with ID "${messageElementId}" not found on page "${pageId}". Message: "${message}"`);
+                console.warn(`Message element with ID "${messageElementId}" not found. Message: "${message}"`);
             }
         }
 
@@ -489,14 +479,14 @@
                     <div class="auth-message-box"></div>
                     <div class="auth-success-message"></div>
                     <div class="auth-error-message"></div>
-                    <div class="auth-loading-indicator"></div>
+                    <div class="auth-loading-indicator">Loading...</div>
 
                     <!-- Login Section -->
                     <div id="loginSection">
                         <form id="loginForm" class="flex flex-col gap-4">
                             <div class="form-group">
-                                <label for="loginUsername" class="block text-gray-300 text-sm font-bold mb-2">Username</label>
-                                <input type="text" id="loginUsername" placeholder="your_username" required
+                                <label for="loginEmail" class="block text-gray-300 text-sm font-bold mb-2">Email</label>
+                                <input type="email" id="loginEmail" placeholder="your@example.com" required
                                        class="retro-input">
                             </div>
                             <div class="form-group">
@@ -517,8 +507,8 @@
                                        class="retro-input">
                             </div>
                             <div class="form-group">
-                                <label for="registerUsername" class="block text-gray-300 text-sm font-bold mb-2">Username (for login)</label>
-                                <input type="text" id="registerUsername" placeholder="Choose a username" required
+                                <label for="registerEmail" class="block text-gray-300 text-sm font-bold mb-2">Email</label>
+                                <input type="email" id="registerEmail" placeholder="your@example.com" required
                                        class="retro-input">
                             </div>
                             <div class="form-group">
@@ -577,7 +567,7 @@
             loginForm.addEventListener('submit', handleLogin);
             registerForm.addEventListener('submit', handleRegister);
 
-            // Update auth page content based on current login status
+            // Initial state check for auth page when rendered
             if (currentUserName !== 'Guest') {
                 document.getElementById('welcomeUserName').textContent = currentUserName;
                 document.getElementById('welcomeUserId').textContent = currentUserId;
@@ -595,12 +585,13 @@
 
         /**
          * Renders the content of the Games Page.
+         * Sets up real-time listener for games data from Firestore.
          */
         function renderGamesPage() {
             const gamesPageDiv = document.getElementById('games-page');
             gamesPageDiv.innerHTML = `
                 <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)]">
-                    <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Your Games</h2>
+                    <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Community Games</h2>
 
                     <div class="bg-gray-700 p-6 rounded-lg mb-8 shadow-inner">
                         <h3 class="text-2xl font-bold text-white mb-4">Add a New Game</h3>
@@ -634,18 +625,33 @@
                     </div>
 
                     <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
-                        <h3 class="text-2xl font-bold text-white mb-4">Community Games</h3>
+                        <h3 class="text-2xl font-bold text-white mb-4">Available Games</h3>
                         <div id="games-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- Games will be loaded here -->
+                            <p class="text-gray-300 text-center col-span-full">Loading games...</p>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Attach event listener
             document.getElementById('add-game-form').addEventListener('submit', handleAddGame);
-            // Update games list with current in-memory data
-            updateGamesList(gamesData);
+
+            // Set up real-time listener for games data
+            if (window.firebaseInitialized && firebaseDb) {
+                const q = window.query(window.collection(firebaseDb, 'artifacts', appId, 'public', 'games'));
+                window.onSnapshot(q, (snapshot) => {
+                    const games = [];
+                    snapshot.forEach((doc) => {
+                        games.push(doc.data());
+                    });
+                    games.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+                    updateGamesList(games);
+                }, (error) => {
+                    console.error("Error fetching games:", error);
+                    displayMessage("Failed to load games: " + error.message, 'error', 'games-message');
+                });
+            } else {
+                displayMessage("Firebase not initialized. Cannot load games.", 'error', 'games-message');
+            }
         }
 
         /**
@@ -665,53 +671,60 @@
                 <div class="bg-gray-800 p-5 rounded-lg shadow-md border border-gray-600 transition-transform transform hover:scale-105">
                     <h4 class="text-xl font-semibold text-purple-400 mb-2">${escapeHTML(game.title)}</h4>
                     <p class="text-gray-300 text-sm mb-3">${escapeHTML(game.description)}</p>
-                    <p class="text-gray-400 text-xs">By: ${escapeHTML(game.userId)}</p>
+                    <p class="text-gray-400 text-xs">By: ${escapeHTML(game.userName || 'Unknown')}</p>
                     <p class="text-gray-500 text-xs mt-1">Added: ${new Date(game.timestamp).toLocaleString()}</p>
                 </div>
             `).join('');
         }
 
         /**
-         * Handles adding a new game to in-memory data.
+         * Handles adding a new game to Firestore.
          * @param {Event} e - The submit event.
          */
         async function handleAddGame(e) {
             e.preventDefault();
             clearMessage('games-message');
+
+            if (currentUserName === 'Guest') {
+                displayMessage("Please login or register to add a game.", 'warning', 'games-message');
+                return;
+            }
+
             setLoading('add-game-button', true, 'Add Game', 'Adding...');
 
             const title = document.getElementById('game-title').value;
             const description = document.getElementById('game-desc').value;
 
             if (!title.trim() || !description.trim()) {
-                displayMessage("Title and description cannot be empty.", 'error', 'games-page', 'games-message');
+                displayMessage("Title and description cannot be empty.", 'error', 'games-message');
                 setLoading('add-game-button', false, 'Add Game', '');
                 return;
             }
 
-            // Simulate adding to a backend (add to local array)
-            const newGame = {
-                id: Date.now().toString(), // Simple unique ID
-                title: title,
-                description: description,
-                userId: currentUserName, // Use currentUserName (display name) here
-                timestamp: new Date().toISOString() // Use ISO string for consistent date
-            };
-            gamesData.unshift(newGame); // Add to the beginning to show latest first
-            updateGamesList(gamesData);
-            saveAllData(); // Save updated games data to localStorage
-
-            document.getElementById('game-title').value = '';
-            document.getElementById('game-desc').value = '';
-            displayMessage('Game added successfully!', 'success', 'games-page', 'games-message');
-
-            setLoading('add-game-button', false, 'Add Game', '');
+            try {
+                await window.addDoc(window.collection(firebaseDb, 'artifacts', appId, 'public', 'games'), {
+                    title: title,
+                    description: description,
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    timestamp: new Date().toISOString()
+                });
+                displayMessage('Game added successfully!', 'success', 'games-message');
+                document.getElementById('game-title').value = '';
+                document.getElementById('game-desc').value = '';
+            } catch (error) {
+                console.error("Error adding game:", error);
+                displayMessage(`Failed to add game: ${error.message}`, 'error', 'games-message');
+            } finally {
+                setLoading('add-game-button', false, 'Add Game', '');
+            }
         }
 
         // --- Forum Page Functions ---
 
         /**
          * Renders the content of the Forum Page.
+         * Sets up real-time listener for forum posts data from Firestore.
          */
         function renderForumPage() {
             const forumPageDiv = document.getElementById('forum-page');
@@ -753,13 +766,30 @@
                     <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
                         <h3 class="text-2xl font-bold text-white mb-4">Recent Posts</h3>
                         <div id="posts-list-container" class="space-y-6">
-                            <!-- Posts will be loaded here -->
+                            <p class="text-gray-300 text-center">Loading posts...</p>
                         </div>
                     </div>
                 </div>
             `;
             document.getElementById('add-post-form').addEventListener('submit', handleAddPost);
-            updateForumPostsList(forumPostsData);
+
+            // Set up real-time listener for forum posts data
+            if (window.firebaseInitialized && firebaseDb) {
+                const q = window.query(window.collection(firebaseDb, 'artifacts', appId, 'public', 'forumPosts'));
+                window.onSnapshot(q, (snapshot) => {
+                    const posts = [];
+                    snapshot.forEach((doc) => {
+                        posts.push(doc.data());
+                    });
+                    posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+                    updateForumPostsList(posts);
+                }, (error) => {
+                    console.error("Error fetching forum posts:", error);
+                    displayMessage("Failed to load forum posts: " + error.message, 'error', 'forum-message');
+                });
+            } else {
+                displayMessage("Firebase not initialized. Cannot load forum posts.", 'error', 'forum-message');
+            }
         }
 
         /**
@@ -779,47 +809,53 @@
                 <div class="bg-gray-800 p-5 rounded-lg shadow-md border border-gray-600 transition-transform transform hover:scale-105">
                     <h4 class="text-xl font-semibold text-purple-400 mb-2">${escapeHTML(post.title)}</h4>
                     <p class="text-gray-300 text-sm mb-3">${escapeHTML(post.content)}</p>
-                    <p class="text-gray-400 text-xs">By: ${escapeHTML(post.userId)}</p>
+                    <p class="text-gray-400 text-xs">By: ${escapeHTML(post.userName || 'Unknown')}</p>
                     <p class="text-gray-500 text-xs mt-1">Posted: ${new Date(post.timestamp).toLocaleString()}</p>
                 </div>
             `).join('');
         }
 
         /**
-         * Handles adding a new forum post to in-memory data.
+         * Handles adding a new forum post to Firestore.
          * @param {Event} e - The submit event.
          */
         async function handleAddPost(e) {
             e.preventDefault();
             clearMessage('forum-message');
+
+            if (currentUserName === 'Guest') {
+                displayMessage("Please login or register to create a post.", 'warning', 'forum-message');
+                return;
+            }
+
             setLoading('add-post-button', true, 'Create Post', 'Creating...');
 
             const title = document.getElementById('post-title').value;
             const content = document.getElementById('post-content').value;
 
             if (!title.trim() || !content.trim()) {
-                displayMessage("Title and content cannot be empty.", 'error', 'forum-page', 'forum-message');
+                displayMessage("Title and content cannot be empty.", 'error', 'forum-message');
                 setLoading('add-post-button', false, 'Create Post', '');
                 return;
             }
 
-            // Simulate adding to a backend (add to local array)
-            const newPost = {
-                id: Date.now().toString(), // Simple unique ID
-                title: title,
-                content: content,
-                userId: currentUserName, // Use currentUserName (display name) here
-                timestamp: new Date().toISOString()
-            };
-            forumPostsData.unshift(newPost); // Add to the beginning to show latest first
-            updateForumPostsList(forumPostsData);
-            saveAllData(); // Save updated forum data to localStorage
-
-            document.getElementById('post-title').value = '';
-            document.getElementById('post-content').value = '';
-            displayMessage('Post created successfully!', 'success', 'forum-page', 'forum-message');
-
-            setLoading('add-post-button', false, 'Create Post', '');
+            try {
+                await window.addDoc(window.collection(firebaseDb, 'artifacts', appId, 'public', 'forumPosts'), {
+                    title: title,
+                    content: content,
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    timestamp: new Date().toISOString()
+                });
+                displayMessage('Post created successfully!', 'success', 'forum-message');
+                document.getElementById('post-title').value = '';
+                document.getElementById('post-content').value = '';
+            } catch (error) {
+                console.error("Error adding post:", error);
+                displayMessage(`Failed to create post: ${error.message}`, 'error', 'forum-message');
+            } finally {
+                setLoading('add-post-button', false, 'Create Post', '');
+            }
         }
 
         // --- Messaging Page Functions (Placeholder) ---
@@ -835,21 +871,21 @@
             `;
         }
 
-        // --- Local Account System Handlers ---
+        // --- Firebase Auth Handlers (Integrated into the main script) ---
 
         /**
-         * Handles user registration. Stores user data in localStorage.
+         * Handles user registration.
          */
         async function handleRegister(e) {
             e.preventDefault();
             showAuthLoading(true);
             const displayName = document.getElementById('registerDisplayName').value.trim();
-            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
             // Basic client-side validation
-            if (!displayName || !username || !password || !confirmPassword) {
+            if (!displayName || !email || !password || !confirmPassword) {
                 showAuthMessage("Please fill in all fields.", 'error');
                 showAuthLoading(false);
                 return;
@@ -864,83 +900,187 @@
                 showAuthLoading(false);
                 return;
             }
-            if (usersDatabase[username]) {
-                showAuthMessage("Username already exists. Please choose another.", 'error');
+
+            try {
+                // Create user with email and password
+                const userCredential = await window.createUserWithEmailAndPassword(firebaseAuth, email, password);
+                const user = userCredential.user;
+
+                // Save user display name to Firestore
+                const userDocRef = window.doc(firebaseDb, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+                await window.setDoc(userDocRef, {
+                    userId: user.uid,
+                    email: user.email,
+                    displayName: displayName
+                });
+
+                showAuthMessage("Account created successfully! You are now logged in.", 'success');
+                document.getElementById('registerForm').reset(); // Clear the form
+                // onAuthStateChanged will handle showing the welcome section
+            } catch (error) {
+                console.error("Error during registration:", error);
+                // Handle specific Firebase auth errors
+                let errorMessage = "Failed to create account. Please try again.";
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "This email address is already in use.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "The email address is not valid.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = "The password is too weak.";
+                }
+                showAuthMessage(errorMessage, 'error');
+            } finally {
                 showAuthLoading(false);
-                return;
             }
-
-            // Store user in simulated database (localStorage)
-            usersDatabase[username] = {
-                password: password, // In a real app, this would be hashed!
-                displayName: displayName,
-                userId: 'User-' + Math.random().toString(36).substring(2, 8) // Unique ID for this client-side user
-            };
-            saveAllData(); // Save the updated users database
-
-            // Auto-login after registration
-            currentUserName = username;
-            currentUserId = usersDatabase[username].userId;
-            saveAllData(); // Save logged-in state
-
-            showAuthMessage("Account created successfully! You are now logged in.", 'success');
-            document.getElementById('registerForm').reset(); // Clear the form
-            updateGlobalUserIdDisplay();
-            navigateTo('home'); // Redirect to home page after registration
-            showAuthLoading(false);
         }
 
         /**
-         * Handles user login. Checks credentials against localStorage.
+         * Handles user login.
          */
         async function handleLogin(e) {
             e.preventDefault();
             showAuthLoading(true);
-            const username = document.getElementById('loginUsername').value.trim();
+            const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
-            if (!username || !password) {
-                showAuthMessage("Please enter your username and password.", 'error');
+            if (!email || !password) {
+                showAuthMessage("Please enter your email and password.", 'error');
                 showAuthLoading(false);
                 return;
             }
 
-            if (usersDatabase[username] && usersDatabase[username].password === password) {
-                currentUserName = username;
-                currentUserId = usersDatabase[username].userId;
-                saveAllData(); // Save logged-in state
+            try {
+                await window.signInWithEmailAndPassword(firebaseAuth, email, password);
                 showAuthMessage("Logged in successfully!", 'success');
                 document.getElementById('loginForm').reset(); // Clear the form
-                updateGlobalUserIdDisplay();
-                navigateTo('home'); // Redirect to home page after login
-            } else {
-                showAuthMessage("Incorrect username or password.", 'error');
+                // onAuthStateChanged will handle showing the welcome section
+            } catch (error) {
+                console.error("Error during login:", error);
+                let errorMessage = "Invalid email or password. Please try again.";
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorMessage = "Incorrect email or password.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "The email address is not valid.";
+                }
+                showAuthMessage(errorMessage, 'error');
+            } finally {
+                showAuthLoading(false);
             }
-            showAuthLoading(false);
         }
 
         /**
-         * Handles user logout. Clears login state from localStorage.
+         * Handles user logout.
          */
         async function handleLogout() {
             showAuthLoading(true); // Show loading briefly
-            currentUserName = 'Guest';
-            currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8); // Assign a new guest ID
-            saveAllData(); // Clear logged-in state from localStorage
-            showAuthMessage("Logged out successfully.", 'success'); // This message will appear briefly on the auth page if navigated to
-            updateGlobalUserIdDisplay();
-            navigateTo('home'); // Redirect to home page after logout
-            showAuthLoading(false);
+            try {
+                await window.signOut(firebaseAuth);
+                // Auth state change listener will handle UI update
+                showAuthMessage("Logged out successfully.", 'success'); // This message will appear briefly on the auth page if navigated to
+            } catch (error) {
+                console.error("Error during logout:", error);
+                showAuthMessage(`Failed to log out: ${error.message}`, 'error');
+            } finally {
+                showAuthLoading(false);
+            }
         }
 
-        // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('current-year').textContent = new Date().getFullYear();
-            loadAllData(); // Load data on startup
-            updateGlobalUserIdDisplay(); // Update display based on loaded state
-            navigateTo('home'); // Start on the home page
-        });
+        // --- Firebase Auth State Listener (Global) ---
+        // This listener ensures our global user state (currentUserId, currentUserName)
+        // and UI (header buttons, auth page content) are always in sync with Firebase Auth.
+        window.onload = function() { // Ensure Firebase is initialized
+            if (window.firebaseInitialized) {
+                firebaseAuth = window.firebaseAuth;
+                firebaseDb = window.firebaseDb;
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
+                window.onAuthStateChanged(firebaseAuth, async (user) => {
+                    showAuthLoading(false); // Hide loading indicator once auth state is checked
+                    if (user) {
+                        // User is signed in
+                        currentUserId = user.uid;
+                        console.log("Firebase User signed in:", user.uid);
+
+                        try {
+                            // Fetch user profile from Firestore
+                            const userDocRef = window.doc(firebaseDb, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+                            const userDocSnap = await window.getDoc(userDocRef);
+
+                            if (userDocSnap.exists()) {
+                                const userData = userDocSnap.data();
+                                currentUserName = userData.displayName || user.email;
+                                console.log("User profile loaded:", userData);
+                            } else {
+                                // If user just registered or is an anonymous user, create a basic profile
+                                currentUserName = user.email || 'Guest User';
+                                console.log("User profile does not exist, creating default profile.");
+                                await window.setDoc(userDocRef, {
+                                    userId: user.uid,
+                                    email: user.email,
+                                    displayName: currentUserName
+                                }, { merge: true }); // Use merge to avoid overwriting if partial data exists
+                            }
+                        } catch (error) {
+                            console.error("Error fetching/creating user profile:", error);
+                            // Fallback if profile fetching fails
+                            currentUserName = user.email || 'Error User';
+                        }
+
+                        // Update auth page welcome section if currently on auth page
+                        const welcomeSection = document.getElementById('welcomeSection');
+                        if (welcomeSection) { // Check if auth page is rendered
+                            const welcomeUserNameElement = document.getElementById('welcomeUserName');
+                            const welcomeUserIdElement = document.getElementById('welcomeUserId');
+                            if (welcomeUserNameElement) welcomeUserNameElement.textContent = currentUserName;
+                            if (welcomeUserIdElement) welcomeUserIdElement.textContent = currentUserId;
+                            welcomeSection.classList.remove('hidden');
+                            document.getElementById('loginSection').classList.add('hidden');
+                            document.getElementById('registerSection').classList.add('hidden');
+                        }
+                    } else {
+                        // User is signed out
+                        currentUserId = 'Guest-' + crypto.randomUUID().substring(0, 8); // Assign a new guest ID
+                        currentUserName = 'Guest';
+                        console.log("Firebase User signed out. New Guest ID:", currentUserId);
+
+                        // If on auth page, ensure forms are visible
+                        const welcomeSection = document.getElementById('welcomeSection');
+                        if (welcomeSection) {
+                            welcomeSection.classList.add('hidden');
+                            document.getElementById('loginSection').classList.remove('hidden');
+                            document.getElementById('registerSection').classList.add('hidden'); // Default to login tab
+                        }
+                    }
+                    updateGlobalUserIdDisplay(); // Always update global display in header
+                });
+
+                // Initial sign-in with custom token or anonymously if token is not defined
+                async function initialAuthSetup() {
+                    try {
+                        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        if (initialAuthToken) {
+                            await window.signInWithCustomToken(firebaseAuth, initialAuthToken);
+                            console.log("Signed in with custom token.");
+                        } else {
+                            await window.signInAnonymously(firebaseAuth);
+                            console.log("Signed in anonymously.");
+                        }
+                    } catch (error) {
+                        console.error("Error during initial authentication:", error);
+                        // No specific message needed here, onAuthStateChanged handles overall state.
+                    } finally {
+                        showAuthLoading(false); // Hide loading when initial auth attempt is done
+                    }
+                }
+                initialAuthSetup(); // Call initial auth setup
+            } else {
+                console.error("Firebase not initialized. Cannot set up authentication listeners.");
+                userIdDisplay.textContent = 'Firebase Error';
+            }
+
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            navigateTo('home'); // Start on the home page
+        };
     </script>
 </body>
 </html>
