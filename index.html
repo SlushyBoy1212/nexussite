@@ -27,8 +27,7 @@
             getDoc,
             collection,
             query,
-            orderBy, // Note: orderBy requires indexes for real apps
-            onSnapshot,
+            onSnapshot, // orderBy removed to simplify, sorting done in JS
             addDoc
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -53,7 +52,7 @@
         window.getDoc = getDoc;
         window.collection = collection;
         window.query = query;
-        window.orderBy = orderBy;
+        // window.orderBy = orderBy; // No longer exporting or using orderBy directly for simplified setup
         window.onSnapshot = onSnapshot;
         window.addDoc = addDoc;
         window.firebaseInitialized = true; // Flag to indicate Firebase is ready
@@ -636,6 +635,7 @@
             document.getElementById('add-game-form').addEventListener('submit', handleAddGame);
 
             // Set up real-time listener for games data
+            // Ensure firebaseDb is available before attempting Firestore operations
             if (window.firebaseInitialized && firebaseDb) {
                 const q = window.query(window.collection(firebaseDb, 'artifacts', appId, 'public', 'games'));
                 window.onSnapshot(q, (snapshot) => {
@@ -643,11 +643,11 @@
                     snapshot.forEach((doc) => {
                         games.push(doc.data());
                     });
-                    games.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+                    games.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first in JS
                     updateGamesList(games);
                 }, (error) => {
                     console.error("Error fetching games:", error);
-                    displayMessage("Failed to load games: " + error.message, 'error', 'games-message');
+                    displayMessage(`Failed to load games: ${error.message}. Check Firebase Console for security rules and network.`, 'error', 'games-message');
                 });
             } else {
                 displayMessage("Firebase not initialized. Cannot load games.", 'error', 'games-message');
@@ -700,6 +700,11 @@
                 setLoading('add-game-button', false, 'Add Game', '');
                 return;
             }
+            if (!firebaseDb) {
+                displayMessage("Database not initialized. Please refresh.", 'error', 'games-message');
+                setLoading('add-game-button', false, 'Add Game', '');
+                return;
+            }
 
             try {
                 await window.addDoc(window.collection(firebaseDb, 'artifacts', appId, 'public', 'games'), {
@@ -714,7 +719,7 @@
                 document.getElementById('game-desc').value = '';
             } catch (error) {
                 console.error("Error adding game:", error);
-                displayMessage(`Failed to add game: ${error.message}`, 'error', 'games-message');
+                displayMessage(`Failed to add game: ${error.message}. Check Firebase Console for security rules.`, 'error', 'games-message');
             } finally {
                 setLoading('add-game-button', false, 'Add Game', '');
             }
@@ -774,6 +779,7 @@
             document.getElementById('add-post-form').addEventListener('submit', handleAddPost);
 
             // Set up real-time listener for forum posts data
+            // Ensure firebaseDb is available before attempting Firestore operations
             if (window.firebaseInitialized && firebaseDb) {
                 const q = window.query(window.collection(firebaseDb, 'artifacts', appId, 'public', 'forumPosts'));
                 window.onSnapshot(q, (snapshot) => {
@@ -781,11 +787,11 @@
                     snapshot.forEach((doc) => {
                         posts.push(doc.data());
                     });
-                    posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+                    posts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first in JS
                     updateForumPostsList(posts);
                 }, (error) => {
                     console.error("Error fetching forum posts:", error);
-                    displayMessage("Failed to load forum posts: " + error.message, 'error', 'forum-message');
+                    displayMessage(`Failed to load forum posts: ${error.message}. Check Firebase Console for security rules and network.`, 'error', 'forum-message');
                 });
             } else {
                 displayMessage("Firebase not initialized. Cannot load forum posts.", 'error', 'forum-message');
@@ -838,6 +844,11 @@
                 setLoading('add-post-button', false, 'Create Post', '');
                 return;
             }
+            if (!firebaseDb) {
+                displayMessage("Database not initialized. Please refresh.", 'error', 'forum-message');
+                setLoading('add-post-button', false, 'Create Post', '');
+                return;
+            }
 
             try {
                 await window.addDoc(window.collection(firebaseDb, 'artifacts', appId, 'public', 'forumPosts'), {
@@ -852,7 +863,7 @@
                 document.getElementById('post-content').value = '';
             } catch (error) {
                 console.error("Error adding post:", error);
-                displayMessage(`Failed to create post: ${error.message}`, 'error', 'forum-message');
+                displayMessage(`Failed to create post: ${error.message}. Check Firebase Console for security rules.`, 'error', 'forum-message');
             } finally {
                 setLoading('add-post-button', false, 'Create Post', '');
             }
@@ -897,6 +908,11 @@
             }
             if (password !== confirmPassword) {
                 showAuthMessage("Passwords do not match.", 'error');
+                showAuthLoading(false);
+                return;
+            }
+            if (!firebaseAuth) {
+                showAuthMessage("Authentication service not initialized. Please refresh.", 'error');
                 showAuthLoading(false);
                 return;
             }
@@ -948,6 +964,11 @@
                 showAuthLoading(false);
                 return;
             }
+            if (!firebaseAuth) {
+                showAuthMessage("Authentication service not initialized. Please refresh.", 'error');
+                showAuthLoading(false);
+                return;
+            }
 
             try {
                 await window.signInWithEmailAndPassword(firebaseAuth, email, password);
@@ -973,6 +994,11 @@
          */
         async function handleLogout() {
             showAuthLoading(true); // Show loading briefly
+            if (!firebaseAuth) {
+                showAuthMessage("Authentication service not initialized. Please refresh.", 'error');
+                showAuthLoading(false);
+                return;
+            }
             try {
                 await window.signOut(firebaseAuth);
                 // Auth state change listener will handle UI update
@@ -989,94 +1015,98 @@
         // This listener ensures our global user state (currentUserId, currentUserName)
         // and UI (header buttons, auth page content) are always in sync with Firebase Auth.
         window.onload = function() { // Ensure Firebase is initialized
-            if (window.firebaseInitialized) {
-                firebaseAuth = window.firebaseAuth;
-                firebaseDb = window.firebaseDb;
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            // Wait for Firebase global variables to be set by the module script
+            const checkFirebaseReady = setInterval(() => {
+                if (window.firebaseInitialized) {
+                    clearInterval(checkFirebaseReady);
+                    firebaseAuth = window.firebaseAuth;
+                    firebaseDb = window.firebaseDb;
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-                window.onAuthStateChanged(firebaseAuth, async (user) => {
-                    showAuthLoading(false); // Hide loading indicator once auth state is checked
-                    if (user) {
-                        // User is signed in
-                        currentUserId = user.uid;
-                        console.log("Firebase User signed in:", user.uid);
+                    window.onAuthStateChanged(firebaseAuth, async (user) => {
+                        showAuthLoading(false); // Hide loading indicator once auth state is checked
+                        if (user) {
+                            // User is signed in
+                            currentUserId = user.uid;
+                            console.log("Firebase User signed in:", user.uid);
 
+                            try {
+                                // Fetch user profile from Firestore
+                                const userDocRef = window.doc(firebaseDb, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+                                const userDocSnap = await window.getDoc(userDocRef);
+
+                                if (userDocSnap.exists()) {
+                                    const userData = userDocSnap.data();
+                                    currentUserName = userData.displayName || user.email;
+                                    console.log("User profile loaded:", userData);
+                                } else {
+                                    // If user just registered or is an anonymous user, create a basic profile
+                                    currentUserName = user.email || 'Guest User';
+                                    console.log("User profile does not exist, creating default profile.");
+                                    await window.setDoc(userDocRef, {
+                                        userId: user.uid,
+                                        email: user.email,
+                                        displayName: currentUserName
+                                    }, { merge: true }); // Use merge to avoid overwriting if partial data exists
+                                }
+                            } catch (error) {
+                                console.error("Error fetching/creating user profile:", error);
+                                // Fallback if profile fetching fails
+                                currentUserName = user.email || 'Error User';
+                            }
+
+                            // Update auth page welcome section if currently on auth page
+                            const welcomeSection = document.getElementById('welcomeSection');
+                            if (welcomeSection) { // Check if auth page is rendered
+                                const welcomeUserNameElement = document.getElementById('welcomeUserName');
+                                const welcomeUserIdElement = document.getElementById('welcomeUserId');
+                                if (welcomeUserNameElement) welcomeUserNameElement.textContent = currentUserName;
+                                if (welcomeUserIdElement) welcomeUserIdElement.textContent = currentUserId;
+                                welcomeSection.classList.remove('hidden');
+                                document.getElementById('loginSection').classList.add('hidden');
+                                document.getElementById('registerSection').classList.add('hidden');
+                            }
+                        } else {
+                            // User is signed out
+                            currentUserId = 'Guest-' + crypto.randomUUID().substring(0, 8); // Assign a new guest ID
+                            currentUserName = 'Guest';
+                            console.log("Firebase User signed out. New Guest ID:", currentUserId);
+
+                            // If on auth page, ensure forms are visible
+                            const welcomeSection = document.getElementById('welcomeSection');
+                            if (welcomeSection) {
+                                welcomeSection.classList.add('hidden');
+                                document.getElementById('loginSection').classList.remove('hidden');
+                                document.getElementById('registerSection').classList.add('hidden'); // Default to login tab
+                            }
+                        }
+                        updateGlobalUserIdDisplay(); // Always update global display in header
+                    });
+
+                    // Initial sign-in with custom token or anonymously if token is not defined
+                    async function initialAuthSetup() {
                         try {
-                            // Fetch user profile from Firestore
-                            const userDocRef = window.doc(firebaseDb, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
-                            const userDocSnap = await window.getDoc(userDocRef);
-
-                            if (userDocSnap.exists()) {
-                                const userData = userDocSnap.data();
-                                currentUserName = userData.displayName || user.email;
-                                console.log("User profile loaded:", userData);
+                            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                            if (initialAuthToken) {
+                                await window.signInWithCustomToken(firebaseAuth, initialAuthToken);
+                                console.log("Signed in with custom token.");
                             } else {
-                                // If user just registered or is an anonymous user, create a basic profile
-                                currentUserName = user.email || 'Guest User';
-                                console.log("User profile does not exist, creating default profile.");
-                                await window.setDoc(userDocRef, {
-                                    userId: user.uid,
-                                    email: user.email,
-                                    displayName: currentUserName
-                                }, { merge: true }); // Use merge to avoid overwriting if partial data exists
+                                await window.signInAnonymously(firebaseAuth);
+                                console.log("Signed in anonymously.");
                             }
                         } catch (error) {
-                            console.error("Error fetching/creating user profile:", error);
-                            // Fallback if profile fetching fails
-                            currentUserName = user.email || 'Error User';
-                        }
-
-                        // Update auth page welcome section if currently on auth page
-                        const welcomeSection = document.getElementById('welcomeSection');
-                        if (welcomeSection) { // Check if auth page is rendered
-                            const welcomeUserNameElement = document.getElementById('welcomeUserName');
-                            const welcomeUserIdElement = document.getElementById('welcomeUserId');
-                            if (welcomeUserNameElement) welcomeUserNameElement.textContent = currentUserName;
-                            if (welcomeUserIdElement) welcomeUserIdElement.textContent = currentUserId;
-                            welcomeSection.classList.remove('hidden');
-                            document.getElementById('loginSection').classList.add('hidden');
-                            document.getElementById('registerSection').classList.add('hidden');
-                        }
-                    } else {
-                        // User is signed out
-                        currentUserId = 'Guest-' + crypto.randomUUID().substring(0, 8); // Assign a new guest ID
-                        currentUserName = 'Guest';
-                        console.log("Firebase User signed out. New Guest ID:", currentUserId);
-
-                        // If on auth page, ensure forms are visible
-                        const welcomeSection = document.getElementById('welcomeSection');
-                        if (welcomeSection) {
-                            welcomeSection.classList.add('hidden');
-                            document.getElementById('loginSection').classList.remove('hidden');
-                            document.getElementById('registerSection').classList.add('hidden'); // Default to login tab
+                            console.error("Error during initial authentication:", error);
+                            // No specific message needed here, onAuthStateChanged handles overall state.
+                        } finally {
+                            showAuthLoading(false); // Hide loading when initial auth attempt is done
                         }
                     }
-                    updateGlobalUserIdDisplay(); // Always update global display in header
-                });
-
-                // Initial sign-in with custom token or anonymously if token is not defined
-                async function initialAuthSetup() {
-                    try {
-                        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                        if (initialAuthToken) {
-                            await window.signInWithCustomToken(firebaseAuth, initialAuthToken);
-                            console.log("Signed in with custom token.");
-                        } else {
-                            await window.signInAnonymously(firebaseAuth);
-                            console.log("Signed in anonymously.");
-                        }
-                    } catch (error) {
-                        console.error("Error during initial authentication:", error);
-                        // No specific message needed here, onAuthStateChanged handles overall state.
-                    } finally {
-                        showAuthLoading(false); // Hide loading when initial auth attempt is done
-                    }
+                    initialAuthSetup(); // Call initial auth setup
+                } else {
+                    // Firebase not ready yet, continue checking
+                    console.log("Waiting for Firebase to initialize...");
                 }
-                initialAuthSetup(); // Call initial auth setup
-            } else {
-                console.error("Firebase not initialized. Cannot set up authentication listeners.");
-                userIdDisplay.textContent = 'Firebase Error';
-            }
+            }, 100); // Check every 100ms
 
             document.getElementById('current-year').textContent = new Date().getFullYear();
             navigateTo('home'); // Start on the home page
