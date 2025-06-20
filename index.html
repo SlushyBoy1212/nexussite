@@ -72,7 +72,7 @@
             box-shadow: none; /* No shadow on disabled */
         }
 
-        /* Specific styles for logout button (kept for consistency in button removal, but unused) */
+        /* Specific styles for logout button */
         .retro-button.logout {
             background: linear-gradient(to right, #dc2626, #ec4899); /* from-red-600 to-pink-600 */
         }
@@ -98,6 +98,71 @@
             width: 100%;
             min-height: 6rem; /* h-24 equivalent for textarea */
         }
+
+        /* Auth specific styles */
+        .auth-container {
+            background-color: #2d3748; /* Darker gray for auth forms */
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+            margin: auto; /* Center the auth container */
+            min-height: calc(100vh - 280px); /* Ensure it takes up space like other pages */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center content vertically within auth container */
+            box-sizing: border-box; /* Include padding in the width/height */
+        }
+        .auth-tab-button {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background-color: #4a5568; /* gray-700 */
+            color: #cbd5e0; /* gray-300 */
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .auth-tab-button.active {
+            background-color: #6b46c1; /* purple-600 */
+            color: white;
+        }
+        .auth-message-box {
+            background-color: #fefcbf; /* yellow-100 */
+            color: #92400e; /* yellow-900 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #fcd34d; /* yellow-400 */
+            display: none; /* Hidden by default */
+        }
+        .auth-success-message {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-700 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #34d399; /* green-400 */
+            display: none; /* Hidden by default */
+        }
+        .auth-error-message {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #f87171; /* red-400 */
+            display: none; /* Hidden by default */
+        }
+        .auth-loading-indicator {
+            display: none; /* Hidden by default */
+            text-align: center;
+            margin-top: 1rem;
+            color: #8b5cf6; /* purple-500 */
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -108,49 +173,166 @@
             <button class="retro-button" onclick="navigateTo('games')">Games</button>
             <button class="retro-button" onclick="navigateTo('forum')">Forum</button>
             <button class="retro-button" onclick="navigateTo('messaging')">Chat</button>
-            <!-- Login/Logout buttons removed as Firebase authentication is removed -->
+            <!-- Auth Buttons -->
+            <button id="auth-button" class="retro-button" onclick="navigateTo('auth')">Login/Register</button>
+            <button id="header-logout-button" class="retro-button logout hidden" onclick="handleLogout()">Logout</button>
         </nav>
     </header>
 
     <main id="app-main-content" class="w-full max-w-5xl flex-grow">
         <!-- User ID Display -->
         <div class="text-right text-sm text-gray-400 mb-4">
-            Current User ID: <span id="user-id-display" class="font-mono text-purple-300 break-all">Guest User</span>
+            Current User: <span id="user-id-display" class="font-mono text-purple-300 break-all">Guest</span>
         </div>
 
         <!-- Pages will be rendered here dynamically by JavaScript -->
         <div id="home-page" class="hidden"></div>
-        <!-- Auth page removed as Firebase authentication is removed -->
+        <div id="auth-page" class="hidden"></div>
         <div id="games-page" class="hidden"></div>
         <div id="forum-page" class="hidden"></div>
         <div id="messaging-page" class="hidden"></div>
     </main>
 
     <footer class="w-full max-w-5xl bg-gray-800 p-5 rounded-xl shadow-lg mt-8 text-center text-gray-400">
-        &copy; <span id="current-year"></span> Arcade Nexus. All rights reserved.
+        © <span id="current-year">2025</span> Arcade Nexus. All rights reserved.
     </footer>
 
     <!-- Main Application Script -->
     <script>
-        // Data storage (in-memory arrays as Firebase is removed)
+        // Data storage (in-memory arrays, persisted to localStorage for basic persistence)
         let gamesData = [];
         let forumPostsData = [];
-        let messagesData = [];
+        let messagesData = []; // Still in-memory, can be expanded to localStorage later
 
-        // Global user ID (simple placeholder since no actual authentication)
-        const currentUserId = 'GuestUser-' + Math.random().toString(36).substring(2, 8);
+        // Simulated user database (username -> { password, displayName })
+        let usersDatabase = {};
+
+        // Global user ID and name
+        let currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
+        let currentUserName = 'Guest';
 
         // Current view state
-        let currentView = 'home';
+        let currentView = 'home'; // Initial view
+
+        // --- DOM Elements for global messages and loading ---
+        const userIdDisplay = document.getElementById('user-id-display');
+        const authButton = document.getElementById('auth-button');
+        const headerLogoutButton = document.getElementById('header-logout-button');
+
+        // --- LocalStorage Management ---
+
+        /**
+         * Loads all data (users, games, forum posts) from localStorage.
+         */
+        function loadAllData() {
+            try {
+                const storedUsers = localStorage.getItem('arcadeNexusUsers');
+                if (storedUsers) {
+                    usersDatabase = JSON.parse(storedUsers);
+                }
+
+                const storedGames = localStorage.getItem('arcadeNexusGames');
+                if (storedGames) {
+                    gamesData = JSON.parse(storedGames);
+                }
+
+                const storedPosts = localStorage.getItem('arcadeNexusForumPosts');
+                if (storedPosts) {
+                    forumPostsData = JSON.parse(storedPosts);
+                }
+
+                const storedLoggedInUser = localStorage.getItem('arcadeNexusLoggedInUser');
+                if (storedLoggedInUser && usersDatabase[storedLoggedInUser]) {
+                    currentUserName = storedLoggedInUser;
+                    currentUserId = usersDatabase[currentUserName].userId; // Retrieve stored userId
+                } else {
+                    currentUserName = 'Guest';
+                    currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
+                }
+            } catch (e) {
+                console.error("Error loading data from localStorage:", e);
+                // Clear corrupted data if unable to parse
+                localStorage.removeItem('arcadeNexusUsers');
+                localStorage.removeItem('arcadeNexusGames');
+                localStorage.removeItem('arcadeNexusForumPosts');
+                localStorage.removeItem('arcadeNexusLoggedInUser');
+                currentUserName = 'Guest';
+                currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8);
+            }
+        }
+
+        /**
+         * Saves all data (users, games, forum posts) to localStorage.
+         */
+        function saveAllData() {
+            try {
+                localStorage.setItem('arcadeNexusUsers', JSON.stringify(usersDatabase));
+                localStorage.setItem('arcadeNexusGames', JSON.stringify(gamesData));
+                localStorage.setItem('arcadeNexusForumPosts', JSON.stringify(forumPostsData));
+                localStorage.setItem('arcadeNexusLoggedInUser', currentUserName === 'Guest' ? '' : currentUserName);
+            } catch (e) {
+                console.error("Error saving data to localStorage:", e);
+            }
+        }
 
         // --- Helper Functions for UI Updates and Messages ---
 
         /**
-         * Displays a message to the user in a designated message area.
+         * Displays a message in the designated message box within the auth-page.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'info', 'success', or 'error'
+         */
+        function showAuthMessage(message, type = 'info') {
+            // Ensure the message boxes are present on the current page.
+            const authMessageBox = document.querySelector('#auth-page .auth-message-box');
+            const authSuccessMessageBox = document.querySelector('#auth-page .auth-success-message');
+            const authErrorMessageBox = document.querySelector('#auth-page .auth-error-message');
+
+            if (!authMessageBox || !authSuccessMessageBox || !authErrorMessageBox) {
+                console.warn("Auth message boxes not found, cannot display message:", message);
+                return;
+            }
+
+            // Hide all auth message boxes first
+            authMessageBox.style.display = 'none';
+            authSuccessMessageBox.style.display = 'none';
+            authErrorMessageBox.style.display = 'none';
+
+            let targetBox;
+            if (type === 'success') {
+                targetBox = authSuccessMessageBox;
+            } else if (type === 'error') {
+                targetBox = authErrorMessageBox;
+            } else {
+                targetBox = authMessageBox;
+            }
+
+            targetBox.textContent = message;
+            targetBox.style.display = 'block';
+
+            // Hide message after a few seconds
+            setTimeout(() => {
+                targetBox.style.display = 'none';
+            }, 5000);
+        }
+
+        /**
+         * Shows or hides the loading indicator within the auth-page.
+         * @param {boolean} show - True to show, false to hide.
+         */
+        function showAuthLoading(show) {
+            const authLoadingIndicator = document.querySelector('#auth-page .auth-loading-indicator');
+            if (authLoadingIndicator) {
+                authLoadingIndicator.style.display = show ? 'block' : 'none';
+            }
+        }
+
+        /**
+         * Displays a message to the user in a designated message area for content pages.
          * @param {string} message - The message to display.
          * @param {string} type - 'success', 'error', 'info', 'warning'. Determines color.
-         * @param {string} pageId - The ID of the page div where the message element resides (e.g., 'auth-page', 'games-page').
-         * @param {string} messageElementId - The ID of the specific HTML element to display the message (e.g., 'auth-message', 'games-message').
+         * @param {string} pageId - The ID of the page div where the message element resides (e.g., 'games-page', 'forum-page').
+         * @param {string} messageElementId - The ID of the specific HTML element to display the message (e.g., 'games-message', 'forum-message').
          */
         function displayMessage(message, type, pageId, messageElementId) {
             const messageElement = document.getElementById(messageElementId);
@@ -162,6 +344,11 @@
                     type === 'warning' ? 'text-yellow-400' :
                     'text-blue-400'
                 }`;
+                // Hide message after a few seconds
+                setTimeout(() => {
+                    messageElement.textContent = '';
+                    messageElement.className = '';
+                }, 5000);
             } else {
                 console.warn(`Message element with ID "${messageElementId}" not found on page "${pageId}". Message: "${message}"`);
             }
@@ -195,21 +382,41 @@
         }
 
         /**
-         * Updates the displayed user ID in the header.
+         * Updates the displayed user ID and name in the header.
          */
-        function updateUserIdDisplay() {
-            document.getElementById('user-id-display').textContent = currentUserId;
+        function updateGlobalUserIdDisplay() {
+            userIdDisplay.textContent = currentUserName + (currentUserName !== 'Guest' ? ` (${currentUserId.substring(0, 8)}...)` : '');
+
+            // Update header auth buttons
+            if (currentUserName !== 'Guest') {
+                authButton.classList.add('hidden');
+                headerLogoutButton.classList.remove('hidden');
+            } else {
+                authButton.classList.remove('hidden');
+                headerLogoutButton.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Escape HTML entities to prevent XSS.
+         * @param {string} str - The string to escape.
+         * @returns {string} The escaped string.
+         */
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
         }
 
         // --- Navigation Functions ---
 
         /**
          * Navigates to a different page/view.
-         * @param {string} viewName - The name of the view to navigate to ('home', 'games', 'forum', 'messaging').
+         * @param {string} viewName - The name of the view to navigate to ('home', 'auth', 'games', 'forum', 'messaging').
          */
         function navigateTo(viewName) {
             // Hide all pages
-            ['home-page', 'games-page', 'forum-page', 'messaging-page'].forEach(id => {
+            ['home-page', 'auth-page', 'games-page', 'forum-page', 'messaging-page'].forEach(id => {
                 const page = document.getElementById(id);
                 if (page) page.classList.add('hidden');
             });
@@ -222,6 +429,9 @@
                 switch (viewName) {
                     case 'home':
                         renderHomePage();
+                        break;
+                    case 'auth':
+                        renderAuthPage();
                         break;
                     case 'games':
                         renderGamesPage();
@@ -258,6 +468,127 @@
                     </div>
                 </div>
             `;
+        }
+
+        /**
+         * Renders the content of the Auth Page (Login/Register).
+         */
+        function renderAuthPage() {
+            const authPageDiv = document.getElementById('auth-page');
+            authPageDiv.innerHTML = `
+                <div class="auth-container">
+                    <h2 class="text-3xl font-bold text-center text-white mb-6">Account Access</h2>
+
+                    <!-- Tab Navigation -->
+                    <div class="flex gap-2 mb-6">
+                        <button id="loginTab" class="auth-tab-button active">Login</button>
+                        <button id="registerTab" class="auth-tab-button">Register</button>
+                    </div>
+
+                    <!-- Message Boxes for auth -->
+                    <div class="auth-message-box"></div>
+                    <div class="auth-success-message"></div>
+                    <div class="auth-error-message"></div>
+                    <div class="auth-loading-indicator"></div>
+
+                    <!-- Login Section -->
+                    <div id="loginSection">
+                        <form id="loginForm" class="flex flex-col gap-4">
+                            <div class="form-group">
+                                <label for="loginUsername" class="block text-gray-300 text-sm font-bold mb-2">Username</label>
+                                <input type="text" id="loginUsername" placeholder="your_username" required
+                                       class="retro-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword" class="block text-gray-300 text-sm font-bold mb-2">Password</label>
+                                <input type="password" id="loginPassword" placeholder="********" required
+                                       class="retro-input">
+                            </div>
+                            <button type="submit" id="loginSubmitButton" class="retro-button">Login</button>
+                        </form>
+                    </div>
+
+                    <!-- Register Section -->
+                    <div id="registerSection" class="hidden">
+                        <form id="registerForm" class="flex flex-col gap-4">
+                            <div class="form-group">
+                                <label for="registerDisplayName" class="block text-gray-300 text-sm font-bold mb-2">Display Name</label>
+                                <input type="text" id="registerDisplayName" placeholder="Your Display Name" required
+                                       class="retro-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerUsername" class="block text-gray-300 text-sm font-bold mb-2">Username (for login)</label>
+                                <input type="text" id="registerUsername" placeholder="Choose a username" required
+                                       class="retro-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerPassword" class="block text-gray-300 text-sm font-bold mb-2">Password</label>
+                                <input type="password" id="registerPassword" placeholder="********" required
+                                       class="retro-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerConfirmPassword" class="block text-gray-300 text-sm font-bold mb-2">Confirm Password</label>
+                                <input type="password" id="registerConfirmPassword" placeholder="********" required
+                                       class="retro-input">
+                            </div>
+                            <button type="submit" id="registerSubmitButton" class="retro-button">Register</button>
+                        </form>
+                    </div>
+
+                    <!-- Welcome Section (after successful login/registration) -->
+                    <div id="welcomeSection" class="hidden text-center">
+                        <h3 class="text-2xl font-bold text-white mb-4">Hello, <span id="welcomeUserName"></span>!</h3>
+                        <p class="text-gray-300 mb-6">User ID: <span id="welcomeUserId" class="font-mono text-sm break-all"></span></p>
+                        <p class="text-gray-300 mb-6">You are successfully logged in.</p>
+                        <button id="authLogoutButton" class="retro-button logout" onclick="handleLogout()">Logout</button>
+                    </div>
+                </div>
+            `;
+
+            // Attach event listeners for auth page elements after they are rendered
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginSection = document.getElementById('loginSection');
+            const registerSection = document.getElementById('registerSection');
+            const welcomeSection = document.getElementById('welcomeSection');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            // Function to switch between login and register forms on auth page
+            const showAuthForm = (formId) => {
+                if (formId === 'login') {
+                    loginSection.classList.remove('hidden');
+                    registerSection.classList.add('hidden');
+                    loginTab.classList.add('active');
+                    registerTab.classList.remove('active');
+                } else {
+                    loginSection.classList.add('hidden');
+                    registerSection.classList.remove('hidden');
+                    loginTab.classList.remove('active');
+                    registerTab.classList.add('active');
+                }
+                // Clear any previous messages when switching forms
+                document.querySelectorAll('.auth-message-box, .auth-success-message, .auth-error-message').forEach(el => el.style.display = 'none');
+            };
+
+            loginTab.addEventListener('click', () => showAuthForm('login'));
+            registerTab.addEventListener('click', () => showAuthForm('register'));
+
+            loginForm.addEventListener('submit', handleLogin);
+            registerForm.addEventListener('submit', handleRegister);
+
+            // Update auth page content based on current login status
+            if (currentUserName !== 'Guest') {
+                document.getElementById('welcomeUserName').textContent = currentUserName;
+                document.getElementById('welcomeUserId').textContent = currentUserId;
+                welcomeSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+                registerSection.classList.add('hidden');
+            } else {
+                welcomeSection.classList.add('hidden');
+                showAuthForm('login'); // Default to login form
+            }
+            showAuthLoading(false);
         }
 
         // --- Games Page Functions ---
@@ -363,11 +694,12 @@
                 id: Date.now().toString(), // Simple unique ID
                 title: title,
                 description: description,
-                userId: currentUserId,
+                userId: currentUserName, // Use currentUserName (display name) here
                 timestamp: new Date().toISOString() // Use ISO string for consistent date
             };
             gamesData.unshift(newGame); // Add to the beginning to show latest first
             updateGamesList(gamesData);
+            saveAllData(); // Save updated games data to localStorage
 
             document.getElementById('game-title').value = '';
             document.getElementById('game-desc').value = '';
@@ -460,7 +792,7 @@
         async function handleAddPost(e) {
             e.preventDefault();
             clearMessage('forum-message');
-            setLoading('add-post-button', true, 'Create Post', 'Creating Post...');
+            setLoading('add-post-button', true, 'Create Post', 'Creating...');
 
             const title = document.getElementById('post-title').value;
             const content = document.getElementById('post-content').value;
@@ -471,15 +803,17 @@
                 return;
             }
 
+            // Simulate adding to a backend (add to local array)
             const newPost = {
-                id: Date.now().toString(),
+                id: Date.now().toString(), // Simple unique ID
                 title: title,
                 content: content,
-                userId: currentUserId,
+                userId: currentUserName, // Use currentUserName (display name) here
                 timestamp: new Date().toISOString()
             };
-            forumPostsData.unshift(newPost); // Add to the beginning
+            forumPostsData.unshift(newPost); // Add to the beginning to show latest first
             updateForumPostsList(forumPostsData);
+            saveAllData(); // Save updated forum data to localStorage
 
             document.getElementById('post-title').value = '';
             document.getElementById('post-content').value = '';
@@ -488,120 +822,125 @@
             setLoading('add-post-button', false, 'Create Post', '');
         }
 
-        // --- Messaging Page Functions ---
-
-        /**
-         * Renders the content of the Messaging Page.
-         */
+        // --- Messaging Page Functions (Placeholder) ---
         function renderMessagingPage() {
             const messagingPageDiv = document.getElementById('messaging-page');
             messagingPageDiv.innerHTML = `
-                <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)] flex flex-col">
+                <div class="p-8 bg-gray-800 rounded-lg shadow-xl min-h-[calc(100vh-280px)]">
                     <h2 class="text-4xl font-extrabold text-white mb-6 text-center">Community Chat</h2>
-
-                    <div id="messages-list-container" class="flex-grow bg-gray-700 p-6 rounded-lg shadow-inner overflow-y-auto mb-6 h-96 custom-scrollbar">
-                        <!-- Messages will be loaded here -->
-                    </div>
-
-                    <div class="bg-gray-700 p-6 rounded-lg shadow-inner">
-                        <form id="send-message-form" class="flex items-center space-x-4">
-                            <input
-                                type="text"
-                                id="new-message-input"
-                                placeholder="Type your message..."
-                                class="flex-grow retro-input"
-                                required
-                            />
-                            <button type="submit" id="send-message-button" class="retro-button">
-                                Send
-                            </button>
-                        </form>
-                        <p id="messaging-message" class="mt-4 text-sm"></p>
+                    <div class="bg-gray-700 p-6 rounded-lg shadow-inner min-h-[400px] flex flex-col custom-scrollbar overflow-y-auto">
+                        <p class="text-gray-300 text-center flex-grow flex items-center justify-center">Chat functionality coming soon!</p>
                     </div>
                 </div>
             `;
-            document.getElementById('send-message-form').addEventListener('submit', handleSendMessage);
-            updateMessagesList(messagesData);
         }
 
-        /**
-         * Updates the display of the messages list.
-         * @param {Array<Object>} messages - Array of message objects.
-         */
-        function updateMessagesList(messages) {
-            const messagesListContainer = document.getElementById('messages-list-container');
-            if (!messagesListContainer) return;
-
-            if (messages.length === 0) {
-                messagesListContainer.innerHTML = '<p class="text-gray-300 text-center">No messages yet. Start the conversation!</p>';
-                return;
-            }
-
-            messagesListContainer.innerHTML = messages.map(msg => `
-                <div class="p-3 rounded-lg shadow-sm ${msg.userId === currentUserId ? 'bg-purple-600 ml-auto text-right' : 'bg-gray-600 mr-auto text-left'} max-w-[80%]">
-                    <p class="text-sm font-semibold text-white break-words">${escapeHTML(msg.content)}</p>
-                    <p class="text-xs text-gray-200 mt-1">
-                        <span class="font-bold">${msg.userId === currentUserId ? 'You' : escapeHTML(msg.userId)}</span>
-                        - ${new Date(msg.timestamp).toLocaleTimeString()}
-                    </p>
-                </div>
-            `).join('');
-
-            // Scroll to bottom of chat
-            messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
-        }
+        // --- Local Account System Handlers ---
 
         /**
-         * Handles sending a new message to in-memory data.
-         * @param {Event} e - The submit event.
+         * Handles user registration. Stores user data in localStorage.
          */
-        async function handleSendMessage(e) {
+        async function handleRegister(e) {
             e.preventDefault();
-            clearMessage('messaging-message');
-            setLoading('send-message-button', true, 'Send', 'Sending...');
+            showAuthLoading(true);
+            const displayName = document.getElementById('registerDisplayName').value.trim();
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-            const newMessageInput = document.getElementById('new-message-input');
-            const messageContent = newMessageInput.value;
-
-            if (!messageContent.trim()) {
-                displayMessage("Message cannot be empty.", 'error', 'messaging-page', 'messaging-message');
-                setLoading('send-message-button', false, 'Send', '');
+            // Basic client-side validation
+            if (!displayName || !username || !password || !confirmPassword) {
+                showAuthMessage("Please fill in all fields.", 'error');
+                showAuthLoading(false);
+                return;
+            }
+            if (password.length < 6) {
+                showAuthMessage("Password should be at least 6 characters.", 'error');
+                showAuthLoading(false);
+                return;
+            }
+            if (password !== confirmPassword) {
+                showAuthMessage("Passwords do not match.", 'error');
+                showAuthLoading(false);
+                return;
+            }
+            if (usersDatabase[username]) {
+                showAuthMessage("Username already exists. Please choose another.", 'error');
+                showAuthLoading(false);
                 return;
             }
 
-            const newMessage = {
-                id: Date.now().toString(),
-                content: messageContent,
-                userId: currentUserId,
-                timestamp: new Date().toISOString()
+            // Store user in simulated database (localStorage)
+            usersDatabase[username] = {
+                password: password, // In a real app, this would be hashed!
+                displayName: displayName,
+                userId: 'User-' + Math.random().toString(36).substring(2, 8) // Unique ID for this client-side user
             };
-            messagesData.push(newMessage); // Add to the end for chat flow
-            updateMessagesList(messagesData);
+            saveAllData(); // Save the updated users database
 
-            newMessageInput.value = ''; // Clear input field
-            setLoading('send-message-button', false, 'Send', '');
+            // Auto-login after registration
+            currentUserName = username;
+            currentUserId = usersDatabase[username].userId;
+            saveAllData(); // Save logged-in state
+
+            showAuthMessage("Account created successfully! You are now logged in.", 'success');
+            document.getElementById('registerForm').reset(); // Clear the form
+            updateGlobalUserIdDisplay();
+            navigateTo('home'); // Redirect to home page after registration
+            showAuthLoading(false);
         }
 
         /**
-         * Basic HTML escaping to prevent XSS.
-         * @param {string} str - The string to escape.
-         * @returns {string} The escaped string.
+         * Handles user login. Checks credentials against localStorage.
          */
-        function escapeHTML(str) {
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
+        async function handleLogin(e) {
+            e.preventDefault();
+            showAuthLoading(true);
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showAuthMessage("Please enter your username and password.", 'error');
+                showAuthLoading(false);
+                return;
+            }
+
+            if (usersDatabase[username] && usersDatabase[username].password === password) {
+                currentUserName = username;
+                currentUserId = usersDatabase[username].userId;
+                saveAllData(); // Save logged-in state
+                showAuthMessage("Logged in successfully!", 'success');
+                document.getElementById('loginForm').reset(); // Clear the form
+                updateGlobalUserIdDisplay();
+                navigateTo('home'); // Redirect to home page after login
+            } else {
+                showAuthMessage("Incorrect username or password.", 'error');
+            }
+            showAuthLoading(false);
         }
 
-        // --- Initialization on DOMContentLoaded ---
+        /**
+         * Handles user logout. Clears login state from localStorage.
+         */
+        async function handleLogout() {
+            showAuthLoading(true); // Show loading briefly
+            currentUserName = 'Guest';
+            currentUserId = 'Guest-' + Math.random().toString(36).substring(2, 8); // Assign a new guest ID
+            saveAllData(); // Clear logged-in state from localStorage
+            showAuthMessage("Logged out successfully.", 'success'); // This message will appear briefly on the auth page if navigated to
+            updateGlobalUserIdDisplay();
+            navigateTo('home'); // Redirect to home page after logout
+            showAuthLoading(false);
+        }
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-year').textContent = new Date().getFullYear();
-            updateUserIdDisplay(); // Set the initial Guest User ID
-
-            // Initial page load
-            navigateTo('home');
+            loadAllData(); // Load data on startup
+            updateGlobalUserIdDisplay(); // Update display based on loaded state
+            navigateTo('home'); // Start on the home page
         });
+
     </script>
 </body>
 </html>
