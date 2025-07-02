@@ -1,5 +1,16 @@
 <html>
   <head>
-    <script href="https://raw.githubusercontent.com/SlushyBoy1212/coolgit-gittest/refs/heads/main/root/howto.js"></script>
+    <script>
+      var url = prompt();
+      var ulr = url.split(".");
+      if(ulr.length = 2){
+        ulr.reverse()
+        ulr.push("root")
+        ulr.reverse()
+      }
+      var raw = "https://raw.githubusercontent.com/"+ulr[1]+"/coolgit-"+ulr[2]+"/refs/heads/main/"+ulr[0]
+      var pages = ulr[1]+".github.io/"+ulr[2]+"/"+ulr[0]
+      alert("rawfolder="+raw)
+      location.replace(pages)</script>
   </head>
 </html>
